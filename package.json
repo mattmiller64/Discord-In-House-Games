@@ -1,0 +1,14 @@
+{
+  "name": "inhouse-games",
+  "version": "1.0.0",
+  "description": "Test bot for RPL",
+  "main": "bot.js",
+  "author": "Trineki",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "discord.io": "^2.5.3",
+    "discord.js": "^11.2.1",
+    "sqlite": "^2.8.0",
+    "winston": "^2.4.0"
+  }
+}
