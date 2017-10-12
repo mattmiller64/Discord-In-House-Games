@@ -5,8 +5,7 @@ var Discord = require('discord.js');
 const bot = new Discord.Client();
 var logger = require('winston');
 var config = require('./config.json');
-const sql = require("sqlite");
-sql.open("./score.sqlite");
+
 // Configure logger settings
 logger.remove(logger.transports.Console);
 logger.add(logger.transports.Console, {
@@ -21,8 +20,6 @@ bot.on('ready', function (evt) {
 });
 
 const prefix = config.prefix; //gets prefix from config file, will look cleaner to just use prefix
-
-
 
 bot.on("message", (message) => {
     //Our bot needs to know if it will execute a command

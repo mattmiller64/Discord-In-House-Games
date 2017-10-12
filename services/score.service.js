@@ -1,15 +1,11 @@
-
-
 const sql = require("sqlite");
-sql.open("./score.sqlite");
-
-
+sql.open("./db/inhouseDB.sqlite");
 
 module.exports = class ScoreService {
     static addScore(message) {
         sql.get(`SELECT * FROM scores WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) {
-                sql.run("INSERT INTO scores (userId, points, level) VALUES (?, ?, ?)", [message.author.id, 1, 0]);
+                sql.run("INSERT INTO scores (userId,userName, points, level) VALUES (?, ?, ?)", [message.author.id,message.author.User.username, 1, 0]);
             } else {
                 let curLevel = Math.floor(0.5 * Math.sqrt(row.points + 1));
                 if (curLevel > row.level) {
@@ -26,7 +22,6 @@ module.exports = class ScoreService {
                     sql.run("INSERT INTO scores (userId, points, level) VALUES (?, ?, ?)", [message.author.id, 1, 0]);
                 });
             });
-
     }
     static getLevel(message) {
         sql.get(`SELECT * FROM scores WHERE userId ="${message.author.id}"`).then(row => {
