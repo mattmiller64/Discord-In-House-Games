@@ -1,6 +1,8 @@
 const sql = require("sqlite");
 sql.open("./db/inhouseDB.sqlite");
 
+//keeps track of teams for a certain day
+
 module.exports = class LadderService {
     static addUser(message) {
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {

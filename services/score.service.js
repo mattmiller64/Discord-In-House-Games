@@ -1,6 +1,8 @@
 const sql = require("sqlite");
 sql.open("./db/inhouseDB.sqlite");
 
+//test module
+
 module.exports = class ScoreService {
     static addScore(message) {
         sql.get(`SELECT * FROM scores WHERE userId ="${message.author.id}"`).then(row => {
