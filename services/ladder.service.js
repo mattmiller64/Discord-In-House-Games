@@ -29,7 +29,7 @@ module.exports = class LadderService {
             console.log(row);
         });
     }
-    static updatePoints(username, points) {
+    static updatePoints(message,username, points) {
         var result = "";
         sql.get(`SELECT * FROM ladder WHERE username ="${username}"`).then(row => {
             console.log(row.username);
