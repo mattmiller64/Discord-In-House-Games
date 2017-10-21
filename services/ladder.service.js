@@ -68,13 +68,12 @@ module.exports = class LadderService {
             if (!row) {
                 message.reply("Please run the addUser command first to be added to the system.");
             } else {
-                var parts = message.content.split(" ");
-                console.log(parts);
-                if (parts.count() > 1) {
+                var parts = message.content.split(' ');              
+                if (parts.length > 2) {
                     message.reply(`invalid command - must be in format : ${config.prefix}updateRank rank`)
                 }
-                if (isValidRank(parts[1])) {
-                    sql.run(`UPDATE ladder SET rank = ${parts[1]} WHERE userId = ${message.author.id}`);
+                else if (this.isValidRank(parts[1])) {
+                    sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = ${message.author.id}`);
                     message.reply(`Rank successfully updated to ${parts[1]}`);
                 }
                 else {
@@ -84,7 +83,7 @@ module.exports = class LadderService {
         })
             .catch(() => {
                 console.error;
-                message.reply("Please run the addUser command first to be added to the system.");
+                message.reply("Error running sql command, please make sure you entered the correct command.");
             });
     }
     static topForty(message) {
@@ -94,12 +93,9 @@ module.exports = class LadderService {
             if (!rows) {
                 message.reply("No Users in the System");
             } else {
-                console.log("here");
-                console.log(rows.length);
                 var t = 0;
                 while(t < rows.length){
                     var element = rows[t];
-                    console.log(element);
                     result += `rank: ${t+1}, player: ${element.username}, points: ${element.points}\n`;
                     t++;
                 }
@@ -113,7 +109,7 @@ module.exports = class LadderService {
             });
     }
     static isValidRank(parts) {
-        if (parts == ranks.bronze || parts == ranks.challenger || parts == ranks.diamond || parts == ranks.gold || parts == ranks.masters || parts == ranks.platinum || parts == ranks.silver || parts == ranks.unranked)
+        if (parts.toLowerCase() == ranks.bronze || parts.toLowerCase() == ranks.challenger || parts.toLowerCase() == ranks.diamond || parts.toLowerCase() == ranks.gold || parts.toLowerCase() == ranks.masters || parts.toLowerCase() == ranks.platinum || parts.toLowerCase() == ranks.silver || parts.toLowerCase() == ranks.unranked)
             return true;
         else
             return false;
