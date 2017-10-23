@@ -16,6 +16,7 @@ var ranks = {
 }
 
 module.exports = class LadderService {
+    // expected .addUser
     static addUser(message) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) {
@@ -34,9 +35,11 @@ module.exports = class LadderService {
                 });
             });
     }
+    // expected .availableRanks
     static availableRanks(message) {
         message.reply(`Type '${config.prefix}updateRank' followed by a space and your rank - Ex. ${config.prefix}updateRank${ranks.challenger} \n\nYour available ranks are ${ranks.unranked}, ${ranks.bronze}, ${ranks.silver}, ${ranks.gold}, ${ranks.platinum}, ${ranks.diamond}, ${ranks.masters}, ${ranks.challenger}`)
     }
+    // expected .standing
     static getUserInfo(message) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) return message.reply("No User was found, please use the addUser command first.");
@@ -45,17 +48,19 @@ module.exports = class LadderService {
         });
     }
     //BUGS - duplicate usernames will mess it up
-    static updatePoints(message) {//expected .updatePoints <username> <points>
+    //expected .updatePoints <username> <points>
+    static updatePoints(message) {
         var parts = message.content.split(" ");
-        username = parts[1];
+        var username = parts[1];
         var points = parts[2];
         sql.get(`SELECT * FROM ladder WHERE username ="${username}"`).then(row => {
-            console.log(row.username);
             if (!row) {
                 return false
             }
             else {
-                sql.run(`UPDATE ladder SET points = ${row.points + points} WHERE username = ${username}`);
+                var p = +row.points + +points;
+                console.log(p);
+                sql.run(`UPDATE ladder SET points = ${p} WHERE username = "${username}"`);
                 return true;
             }
         }).catch(() => {
@@ -63,7 +68,8 @@ module.exports = class LadderService {
             message.reply("Please run the addUser command first to be added to the system.");
         });
     }
-    static updateRank(message) { //expected .updateRank silver
+    //expected .updateRank silver
+    static updateRank(message) { 
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) {
                 message.reply("Please run the addUser command first to be added to the system.");
@@ -73,7 +79,7 @@ module.exports = class LadderService {
                     message.reply(`invalid command - must be in format : ${config.prefix}updateRank rank`)
                 }
                 else if (this.isValidRank(parts[1])) {
-                    sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = ${message.author.id}`);
+                    sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = "${message.author.id}"`);
                     message.reply(`Rank successfully updated to ${parts[1]}`);
                 }
                 else {
@@ -86,6 +92,7 @@ module.exports = class LadderService {
                 message.reply("Error running sql command, please make sure you entered the correct command.");
             });
     }
+    //expected .topForty
     static topForty(message) {
         sql.all(`SELECT * FROM ladder ORDER BY points DESC LIMIT 40`).then(rows => {
             var result = "\n";
