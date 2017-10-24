@@ -60,3 +60,4 @@ typings/
 # database
 /db
 /db/inhouseDB.sqlite
+/config.json
