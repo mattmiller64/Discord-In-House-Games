@@ -3,6 +3,9 @@ sql.open("./db/inhouseDB.sqlite");
 
 //test module
 
+//expected .updatePoints <username> <points>
+//send .updatePoints <username> <points> to UpdatePoints ladderService and send it via message.content
+
 module.exports = class ScoreService {
     static addScore(message) {
         sql.get(`SELECT * FROM scores WHERE userId ="${message.author.id}"`).then(row => {
