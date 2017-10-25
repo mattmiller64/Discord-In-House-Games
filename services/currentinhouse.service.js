@@ -3,38 +3,29 @@ sql.open("./db/inhouseDB.sqlite");
 //keeps track of teams for a certain day
 
 module.exports = class CurrentInHouseService {
+    //mod starts the inhouse games 
     //user signs up, if not added to ladder database throws error.
     // if not added to ladder database throws warning
     // if signups arent open, throws warning
     // groups all sign ups in groups of ten and makes team even
-    static signUp(message) { 
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) {
-                sql.run("INSERT INTO CurrentInHouse (userId, points, level) VALUES (?, ?, ?)", [message.author.id, 1, 0]);
-            } else {
-                let curLevel = Math.floor(0.5 * Math.sqrt(row.points + 1));
-                if (curLevel > row.level) {
-                    row.level = curLevel;
-                    sql.run(`UPDATE CurrentInHouse SET points = ${row.points + 1}, level = ${row.level} WHERE userId = ${message.author.id}`);
-                    message.reply(`You've leveled up to level **${curLevel}**! Ain't that dandy?`);
-                }
-                sql.run(`UPDATE CurrentInHouse SET points = ${row.points + 1} WHERE userId = ${message.author.id}`);
-            }
-        })
+    // starts the sign ups for the current in-houses
+    static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
+        sql.get(`SELECT * FROM CurrentInHouse ORDER BY Id DESC LIMIT 1`).then(row => {
+                //row gets the most recent game to increment the name from
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, name, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.Id + 1}`,new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
+            })
             .catch(() => {
                 console.error;
-                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (userId TEXT, points INTEGER, level INTEGER)").then(() => {
-                    sql.run("INSERT INTO CurrentInHouse (userId, points, level) VALUES (?, ?, ?)", [message.author.id, 1, 0]);
-                });
+                console.log("DB not exist");
+                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, name TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
+                    sql.run("INSERT INTO CurrentInHouse (InhouseId, name, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1", new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
+                })
+                //.catch(()=>{console.log("Fatal Error Occured.")});
             });
     }
-    // starts the sign ups for the current in-houses
-    static startSignUps(message) {
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("Your current level is 0");
-            message.reply(`Your current level is ${row.level}`);
-            console.log(row);
-        });
+    //allows a user to sign up, must already be in the ladder db
+    static signUp(message) {
+
     }
     //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
     static endSignUps(message) {
@@ -53,9 +44,9 @@ module.exports = class CurrentInHouseService {
         });
     }
     //called by another function to create all sets of teams? - have this auto make once 10 people are hit
-    static makeTeams(message) {
+    // static makeTeams(message) {
 
-    }
+    // }
     //creates a team of 5 somehow
     static makeWholeTeam(message) {
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
@@ -93,7 +84,7 @@ module.exports = class CurrentInHouseService {
         bronze = 1
         unranked = 3
     */
-    static balanceTeams(){
+    static balanceTeams() {
 
     }
 }
