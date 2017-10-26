@@ -51,46 +51,50 @@ bot.on("message", (message) => {
     }
     //CurrentInhouseService 
     // can only be called by a mod
-    else if (message.content.startsWith(prefix + 'startSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // opens the sign ups for the current in-houses today
-        if (inHouseOpen) {
-            message.reply("inHouses are already open");
+    else if (message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) {
+        if (message.content.startsWith(prefix + 'startSignUps')) { // opens the sign ups for the current in-houses today
+            if (inHouseOpen) {
+                message.reply("inHouses are already open");
+            } else {
+                inHouseOpen = true;
+                CurrentInhouseService.startSignUps(message);
+                message.reply(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
+            }
         }
-        else {
-            inHouseOpen = true;
-            CurrentInhouseService.startSignUps(message);
-            message.reply(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
+        // can only be called by a mod
+        else if (message.content.startsWith(prefix + 'reOpenSignUps')) { // Re-opens the sign ups to allow last minute people to sign up
+            if (inHouseOpen) {
+                message.reply("inHouses are already open");
+            } else {
+                inHouseOpen = true;
+                CurrentInhouseService.reOpenSignUps(message);
+            }
+        }
+        // end sign ups can only be called by a mod
+        else if (message.content.startsWith(prefix + 'endSignUps')) { // this will also stop sign ups - if a team doesnt have 10 players, the team will disband
+            inHouseOpen = false;
+            CurrentInhouseService.endSignUps(message); //this probably doesnt need to do anything
+        } // can only be called by a mod
+        else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
+            CurrentInhouseService.showTeams(message);
+        } // can only be called by a mod
+        else if (inHouseOpen) {
+            if (message.content.startsWith(prefix + 'endInhouse')) { // ends the in-house games for the day
+                inHouseOpen = false;
+                CurrentInhouseService.endInhouse(message); //this doesnt do anything special either, really to end an inhouse you just create a new one with startSignUps
+            }
+            //mods can still sign up ;)
+            if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
+                CurrentInhouseService.signUp(message);
+            }
         }
     }
-    // can only be called by a mod
-    else if (message.content.startsWith(prefix + 'reOpenSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // Re-opens the sign ups to allow last minute people to sign up
-        if (inHouseOpen) {
-            message.reply("inHouses are already open");
-        }
-        else {
-            inHouseOpen = true;
-            CurrentInhouseService.reOpenSignUps(message);
-        }
-    }
+
     // users can only sign up / end sign up if it is currently open 
     else if (inHouseOpen) {
         if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
             CurrentInhouseService.signUp(message);
-        } // end sign ups can only be called by a mod
-        else if (message.content.startsWith(prefix + 'endSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // this will also stop sign ups - if a team doesnt have 10 players, the team will disband
-            inHouseOpen = false;
-            CurrentInhouseService.endSignUps(message);
-        } // can only be called by a mod
-        else if (message.content.startsWith(prefix + 'showTeams') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // shows the list of current teams full or incomplete
-            CurrentInhouseService.showTeams(message);
-        } // can only be called by a mod
-        else if (message.content.startsWith(prefix + 'endInhouse') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // ends the in-house games for the day
-            inHouseOpen = false;
-            CurrentInhouseService.endInhouse(message);
         }
-        //not sure how yet
-        // else if (message.content.startsWith(prefix + 'makeWholeTeam')) {    // allows a user to make a whole team of pre-defined 5 players
-        //     CurrentInhouseService.makeWholeTeam(message);
-        // }
     }
 });
 

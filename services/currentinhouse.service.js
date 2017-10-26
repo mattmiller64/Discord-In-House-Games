@@ -10,21 +10,60 @@ module.exports = class CurrentInHouseService {
     // groups all sign ups in groups of ten and makes team even
     // starts the sign ups for the current in-houses
     static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY Id DESC LIMIT 1`).then(row => {
+        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
                 //row gets the most recent game to increment the name from
-                sql.run("INSERT INTO CurrentInHouse (InhouseId, name, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.Id + 1}`,new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
+                 new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
             })
             .catch(() => {
                 console.error;
-                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, name TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
-                    sql.run("INSERT INTO CurrentInHouse (InhouseId, name, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1", new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
-                })
-                .catch(()=>{console.log("Fatal Error Occured.")});
+                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
+                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1",
+                         new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
+                    })
+                    .catch(() => {
+                        console.log("Creating and inserting into CurrentInHouse - error occured")
+                    });
             });
     }
     //allows a user to sign up, must already be in the ladder db
     static signUp(message) {
+        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+            //row gets the most recent game to use as the InhouseId
 
+            //CHECK TO SEE IF THEY ALREADY SIGNED UP
+            sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.Id}" AND InhouseId = "${row.InhouseId}"`).then(() => {
+                    if (row) {
+                        message.reply("You have already signed up for todays InHouses");
+                        return false;
+                    }
+                    if (!row) {
+                        console.log("creating signUp")
+                        //if not found, go ahead and add them               
+                        sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date) VALUES (?, ?, ?, ?, ?)", [null, row.InhouseId, message.author.username,
+                             message.author.id, new Date().toJSON().slice(0, 10).toString()]).then(() => {
+                            message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
+                            //Check if 10 people have signed up?
+                            return true;
+                        })
+                    }
+                }) //if the db doesnt exist then they must not have been added so create the table and add them
+                .catch(() => {
+                    console.log('inhouseroster db does not exist, creating db then inserting user')
+                    console.error;
+                    sql.run("CREATE TABLE IF NOT EXISTS InHouseRoster (RosterId INTEGER PRIMARY KEY, InhouseId INTEGER, playerName TEXT, playerId TEXT, date TEXT)").then(() => {
+                        sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date) VALUES (?, ?, ?, ?, ?)", [null, row.InhouseId, message.author.username,
+                             message.author.id, new Date().toJSON().slice(0, 10).toString()])
+                        message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
+                        //Check if 10 people have signed up?
+                        return true;
+                    });
+                });
+        })
+
+    }
+    static haveTenSignedUp() {
+        sql.get(Select)
     }
     //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
     static endSignUps(message) {
