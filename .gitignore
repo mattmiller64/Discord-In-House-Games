@@ -58,6 +58,5 @@ typings/
 .env
 
 # database
-/db
 /db/inhouseDB.sqlite
 /config.json

@@ -16,11 +16,10 @@ module.exports = class CurrentInHouseService {
             })
             .catch(() => {
                 console.error;
-                console.log("DB not exist");
                 sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, name TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
                     sql.run("INSERT INTO CurrentInHouse (InhouseId, name, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1", new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username]);
                 })
-                //.catch(()=>{console.log("Fatal Error Occured.")});
+                .catch(()=>{console.log("Fatal Error Occured.")});
             });
     }
     //allows a user to sign up, must already be in the ladder db

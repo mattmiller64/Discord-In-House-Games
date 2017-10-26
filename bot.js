@@ -28,13 +28,13 @@ bot.on("message", (message) => {
     if (message.author.bot) return; // Ignore bots.    
     if (message.channel.type === "dm") return; // Ignore DM channels.    
     if (message.channel.type !== "text") return;
-    //ScoreService - test
-    ScoreService.addScore(message);
-    if (message.content.startsWith(prefix + 'level')) {
-        ScoreService.getLevel(message);
-    } else if (message.content.startsWith(prefix + 'points')) {
-        ScoreService.getPoints(message);
-    }
+    // //ScoreService - test
+    // ScoreService.addScore(message);
+    // if (message.content.startsWith(prefix + 'level')) {
+    //     ScoreService.getLevel(message);
+    // } else if (message.content.startsWith(prefix + 'points')) {
+    //     ScoreService.getPoints(message);
+    // }
     //LadderService
     else if (message.content.startsWith(prefix + 'addUser')) { //adds a user to the db
         LadderService.addUser(message);
@@ -50,29 +50,41 @@ bot.on("message", (message) => {
         LadderService.topForty(message);
     }
     //CurrentInhouseService 
-    else if (message.content.startsWith(prefix + 'startSignUps')) { // opens the sign ups for the current in-houses today
-        if (inHouseOpen)
+    // can only be called by a mod
+    else if (message.content.startsWith(prefix + 'startSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // opens the sign ups for the current in-houses today
+        if (inHouseOpen) {
             message.reply("inHouses are already open");
+        }
         else {
             inHouseOpen = true;
             CurrentInhouseService.startSignUps(message);
+            message.reply(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
         }
-    } // can only be called by a mod
-    else if (message.content.startsWith(prefix + 'reOpenSignUps')) { // Re-opens the sign ups to allow last minute people to sign up
-        CurrentInhouseService.reOpenSignUps(message);
+    }
+    // can only be called by a mod
+    else if (message.content.startsWith(prefix + 'reOpenSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // Re-opens the sign ups to allow last minute people to sign up
+        if (inHouseOpen) {
+            message.reply("inHouses are already open");
+        }
+        else {
+            inHouseOpen = true;
+            CurrentInhouseService.reOpenSignUps(message);
+        }
     }
     // users can only sign up / end sign up if it is currently open 
     else if (inHouseOpen) {
         if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
             CurrentInhouseService.signUp(message);
         } // end sign ups can only be called by a mod
-        else if (message.content.startsWith(prefix + 'endSignUps')) { // this will also stop sign ups - if a team doesnt have 10 players, the team will disband
+        else if (message.content.startsWith(prefix + 'endSignUps') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // this will also stop sign ups - if a team doesnt have 10 players, the team will disband
+            inHouseOpen = false;
             CurrentInhouseService.endSignUps(message);
         } // can only be called by a mod
-        else if (message.content.showTeams(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
+        else if (message.content.startsWith(prefix + 'showTeams') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // shows the list of current teams full or incomplete
             CurrentInhouseService.showTeams(message);
         } // can only be called by a mod
-        else if (message.content.showTeams(prefix + 'endInhouse')) { // ends the in-house games for the day
+        else if (message.content.startsWith(prefix + 'endInhouse') && message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) { // ends the in-house games for the day
+            inHouseOpen = false;
             CurrentInhouseService.endInhouse(message);
         }
         //not sure how yet
@@ -80,8 +92,6 @@ bot.on("message", (message) => {
         //     CurrentInhouseService.makeWholeTeam(message);
         // }
     }
-
-
 });
 
 bot.login(config.token);
