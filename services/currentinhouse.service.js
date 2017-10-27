@@ -34,21 +34,18 @@ module.exports = class CurrentInHouseService {
             //row gets the most recent game to use as the InhouseId
             //CHECK TO SEE IF THEY ALREADY SIGNED UP
             sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}"`).then((row2) => {
-                    console.log(row2);
                     if (row2) {
                         message.reply("You have already signed up for todays InHouses");
                         return false;
                     }
                     // TODO: NEED TO CHECK TO MAKE SURE THEY ARE IN THE LADDER? - should we add the ladder id to the roster rather than the player info? - who knows, but im doing it my way
                     if (!row2) {
-                        console.log("creating signUp")
                         //if not found, go ahead and add them               
                         sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date) VALUES (?, ?, ?, ?, ?)", [null, row.InhouseId, message.author.username,
                             message.author.id, new Date().toJSON().slice(0, 10).toString()
                         ]).then(() => {
                             message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
                             //Check if 10 people have signed up?
-                            console.log(row);
                             this.handleTenSignedUp(message, row.InhouseId)
                             return true;
                         })
@@ -71,15 +68,141 @@ module.exports = class CurrentInHouseService {
 
     }
     static handleTenSignedUp(message, inhouseId) {
-        console.log(inhouseId);
-        sql.get(`SELECT COUNT(*) as count FROM InHouseRoster where inhouseId not in (Select inhouseId from RosterTeamBridge)  AND inhouseId = "${inhouseId}"`).then((result) => {
-            console.log("count:")
-            console.log(result);
-            if (result.count == 1)
-                console.log("yes");
-            if(result.count == '1')
-                console.log("also yes")
+        sql.get(`SELECT COUNT(*) as count FROM InHouseRoster where RosterId not in (Select RosterId from RosterTeamBridge)  AND inhouseId = "${inhouseId}"`).then((result) => {
+            if (result.count >= 10) {
+                console.log("need to create teams")
+                this.createTeams(message, inhouseId);
+            }
         });
+    }
+    static createTeams(message, inhouseId) {
+        //get top 10 people ordered by rosterId joined with ladder table to get ranks
+        sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,l.Rank
+                    FROM InHouseRoster ihr
+                        LEFT JOIN ladder l
+                            ON ihr.playerId = l.userId
+                    where ihr.RosterId not in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${inhouseId}"
+                    ORDER BY ihr.RosterId asc limit 10`).then((result) => {
+            //this function should separate the teams based on rank - simple averageing formula used - could eventually upgrade it but meh
+            //potential bug - if 20 people sign up too fast to keep up with - this isnt async, so it should be ok? handle this later
+            this.balanceTeams(message, result);
+        });
+
+    }
+    //either average the number of points/ start from the highest and divy them out ie 2 diamonds, one on each team, 
+    //3 diamonds, 2 on one team, next highest on the other until the points even out or 5 are added
+    /*
+        ie 5 diamonds and 3 golds and 2 bronze
+        3 diamond on one team
+        2 diamond on other, then puts 3 golds on this
+        2 bronze on other
+        challenger = 8 pts
+        masters = 6 points
+        diamond = 5 points
+        plat = 4
+        gold = 3
+        silver = 2
+        bronze = 1
+        unranked = 3
+    */
+    static balanceTeams(message, result) {
+        //build avg ranking points and sort by highest elo
+        console.log("balancing teams");
+        result = result.sort(function (a, b) {
+            var ta = CurrentInHouseService.rankNumValue(a.rank);
+            var tb = CurrentInHouseService.rankNumValue(b.rank);
+            if (ta < tb)
+                return 1;
+            else if (ta > tb)
+                return -1;
+            else
+                return 0;
+        });
+        console.log("sort complete : ")
+        console.log(result);
+        // var total = 0;
+        // result.forEach(function (element) {
+        //     total += CurrentInHouseService.rankNumValue(element.rank);
+        // })
+
+        var team1points = 0;
+        var team1members = 0;
+        var team2members = 0;
+        var team2points = 0;
+        var team2 = [];
+        var team1 = [];
+        //divy out highest elo players trying to keep teams even
+        for (var count = 0; count < 10; count++) {
+            var p = CurrentInHouseService.rankNumValue(result[count].rank);
+            //team 2 needs members
+            if (team1points > team2points && team2members != 5) {
+                team2members++;
+                team2points += p;
+                team2.push(result[count]);
+            }
+            //team 1 needs members
+            else if (team2points > team1points && team1members != 5) {
+                team1members++;
+                team1points += p;
+                team1.push(result[count]);
+            }
+            //these last 2 functions are just catch alls, since we dont have a greater or equal, this basically implies the 2 points are the same
+            //team 1 needs the member
+            else if(team1members > team2members) //if team1 has the same points but more members, means the need the next highest elo person
+            {
+                team1members++;
+                team1points += p;
+                team1.push(result[count]);
+            }
+            //same as above but reversed
+            else if(team2members > team1members)
+            {
+                team2members++;
+                team2points += p;
+                team2.push(result[count]);
+            }
+            //else we just add a member to team 1
+            else if (team1members != 5) {
+                team1members++;
+                team1points += p;
+                team1.push(result[count]);
+            }
+            //else add member to team 2
+            else if (team2members != 5) {
+                team2members++;
+                team2points += p;
+                team2.push(result[count]);
+            }
+            console.log("team1",team1);
+            console.log("team2",team2);
+        }
+        console.log("end of adding");
+        console.log("team1 points",team1points);
+        console.log("team2 points", team2points);
+        console.log("team1",team1);
+        console.log("team2",team2);
+        //Create Team X and Y in the db - do we need them to have a vs column? probs not tbh these should be made together
+    }
+    static rankNumValue(rank) { // idealy we would just have a table called ranks with the rank name and point value and join the tables together but meh, later
+        //if we cant figure it out, they are worth 3
+        console.log(rank);
+        var points = 3;
+        if (rank == "challenger")
+            points = 8;
+        else if (rank == "masters")
+            points = 6;
+        else if (rank == "diamond")
+            points = 5;
+        else if (rank == "platinum")
+            points = 4;
+        else if (rank == "gold")
+            points = 3;
+        else if (rank == "silver")
+            points = 2;
+        else if (rank == "bronze")
+            points = 1;
+        console.log("points",points);
+        return points;
     }
     //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
     static endSignUps(message) {
@@ -101,8 +224,9 @@ module.exports = class CurrentInHouseService {
     // static makeTeams(message) {
 
     // }
-    //creates a team of 5 somehow
+    //creates a premade team of 5 somehow
     static makeWholeTeam(message) {
+        return true;
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) return message.reply("sadly you do not have any points yet!");
             message.reply(`you currently have ${row.points} points, good going!`);
@@ -110,6 +234,7 @@ module.exports = class CurrentInHouseService {
     }
     //shows the list of current teams full or incomplete
     static showTeams(message) {
+        return true;
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) return message.reply("sadly you do not have any points yet!");
             message.reply(`you currently have ${row.points} points, good going!`);
@@ -122,23 +247,5 @@ module.exports = class CurrentInHouseService {
             message.reply(`you currently have ${row.points} points, good going!`);
         });
     }
-    //either average the number of points/ start from the highest and divy them out ie 2 diamonds, one on each team, 
-    //3 diamonds, 2 on one team, next highest on the other until the points even out or 5 are added
-    /*
-        ie 5 diamonds and 3 golds and 2 bronze
-        3 diamond on one team
-        2 diamond on other, then puts 3 golds on this
-        2 bronze on other
-        challenger = 8 pts
-        masters = 6 points
-        diamond = 5 points
-        plat = 4
-        gold = 3
-        silver = 2
-        bronze = 1
-        unranked = 3
-    */
-    static balanceTeams() {
 
-    }
 }
