@@ -181,7 +181,7 @@ module.exports = class CurrentInHouseService {
         console.log("team2 points", team2points);
         console.log("team1",team1);
         console.log("team2",team2);
-        //Create Team X and Y in the db - do we need them to have a vs column? probs not tbh these should be made together
+        //Create Team X and Y in the db - do we need them to have a vs column? probs not tbh these should be made together - odd always plays the +1 even ie team 13 palys team 14 team 1 plays team 2
     }
     static rankNumValue(rank) { // idealy we would just have a table called ranks with the rank name and point value and join the tables together but meh, later
         //if we cant figure it out, they are worth 3
