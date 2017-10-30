@@ -14,7 +14,7 @@ module.exports = class CurrentInHouseService {
                 //row gets the most recent game to increment the name from
                 sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
                     new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
-                ]);
+                ])
             })
             .catch(() => {
                 console.error;
@@ -29,7 +29,7 @@ module.exports = class CurrentInHouseService {
             });
     }
     //allows a user to sign up, must already be in the ladder db
-    static signUp(message) {
+    static signUp(message, bot) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
             //CHECK TO SEE IF THEY ALREADY SIGNED UP
@@ -46,7 +46,7 @@ module.exports = class CurrentInHouseService {
                         ]).then(() => {
                             message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
                             //Check if 10 people have signed up?
-                            this.handleTenSignedUp(message, row.InhouseId)
+                            this.handleTenSignedUp(message, row.InhouseId, bot)
                             return true;
                         })
                     }
@@ -67,15 +67,15 @@ module.exports = class CurrentInHouseService {
         })
 
     }
-    static handleTenSignedUp(message, inhouseId) {
+    static handleTenSignedUp(message, inhouseId, bot) {
         sql.get(`SELECT COUNT(*) as count FROM InHouseRoster where RosterId not in (Select RosterId from RosterTeamBridge)  AND inhouseId = "${inhouseId}"`).then((result) => {
             if (result.count >= 10) {
                 console.log("need to create teams")
-                this.createTeams(message, inhouseId);
+                this.createTeams(message, inhouseId, bot);
             }
         });
     }
-    static createTeams(message, inhouseId) {
+    static createTeams(message, inhouseId, bot) {
         //get top 10 people ordered by rosterId joined with ladder table to get ranks
         sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,l.Rank
                     FROM InHouseRoster ihr
@@ -83,9 +83,9 @@ module.exports = class CurrentInHouseService {
                             ON ihr.playerId = l.userId
                     where ihr.RosterId not in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${inhouseId}"
                     ORDER BY ihr.RosterId asc limit 10`).then((result) => {
-            //this function should separate the teams based on rank - simple averageing formula used - could eventually upgrade it but meh
+            //this function should separate the teams based on rank - simple averaging formula used - could eventually upgrade it but meh
             //potential bug - if 20 people sign up too fast to keep up with - this isnt async, so it should be ok? handle this later
-            this.balanceTeams(message, result);
+            this.balanceTeams(message, result, inhouseId, bot);
         });
 
     }
@@ -105,7 +105,7 @@ module.exports = class CurrentInHouseService {
         bronze = 1
         unranked = 3
     */
-    static balanceTeams(message, result) {
+    static balanceTeams(message, result, inhouseId, bot) {
         //build avg ranking points and sort by highest elo
         console.log("balancing teams");
         result = result.sort(function (a, b) {
@@ -118,13 +118,6 @@ module.exports = class CurrentInHouseService {
             else
                 return 0;
         });
-        console.log("sort complete : ")
-        console.log(result);
-        // var total = 0;
-        // result.forEach(function (element) {
-        //     total += CurrentInHouseService.rankNumValue(element.rank);
-        // })
-
         var team1points = 0;
         var team1members = 0;
         var team2members = 0;
@@ -148,15 +141,14 @@ module.exports = class CurrentInHouseService {
             }
             //these last 2 functions are just catch alls, since we dont have a greater or equal, this basically implies the 2 points are the same
             //team 1 needs the member
-            else if(team1members > team2members) //if team1 has the same points but more members, means the need the next highest elo person
+            else if (team1members > team2members) //if team1 has the same points but more members, means the need the next highest elo person
             {
                 team1members++;
                 team1points += p;
                 team1.push(result[count]);
             }
             //same as above but reversed
-            else if(team2members > team1members)
-            {
+            else if (team2members > team1members) {
                 team2members++;
                 team2points += p;
                 team2.push(result[count]);
@@ -173,19 +165,37 @@ module.exports = class CurrentInHouseService {
                 team2points += p;
                 team2.push(result[count]);
             }
-            console.log("team1",team1);
-            console.log("team2",team2);
         }
-        console.log("end of adding");
-        console.log("team1 points",team1points);
-        console.log("team2 points", team2points);
-        console.log("team1",team1);
-        console.log("team2",team2);
+
         //Create Team X and Y in the db - do we need them to have a vs column? probs not tbh these should be made together - odd always plays the +1 even ie team 13 palys team 14 team 1 plays team 2
+        this.addTeamDb(team1, team2, inhouseId, message, bot);
     }
+
+    static addTeamDb(team1, team2, inhouseId, message, bot) {
+        sql.get("SELECT MAX(TeamId) as num from Team").then((num) => {
+            //Create team 1
+            sql.run("INSERT INTO Team (TeamId, teamName) VALUES (?, ?)", [null, `Team${num.num+1}`]).then((row) => {
+                //insert the 5 players into this team using row.lastID as teamID
+                for (var i = 0; i < 5; i++) {
+                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
+                }
+            }).then(() => {
+                //create team 2
+                sql.run("INSERT INTO Team (TeamId, teamName) VALUES (?, ?)", [null, `Team${num.num+2}`]).then((row) => {
+                    //insert the 5 players into this team using row.lastID as teamID
+                    for (var i = 0; i < 5; i++) {
+                        sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
+                    }
+                })
+            }).then(() => {
+                this.showTeams(message, bot, inhouseId) // TODO : this is not waiting on all promises to finsih, need to make this wait on all promises.
+            });
+        })
+
+    }
+
     static rankNumValue(rank) { // idealy we would just have a table called ranks with the rank name and point value and join the tables together but meh, later
         //if we cant figure it out, they are worth 3
-        console.log(rank);
         var points = 3;
         if (rank == "challenger")
             points = 8;
@@ -201,7 +211,6 @@ module.exports = class CurrentInHouseService {
             points = 2;
         else if (rank == "bronze")
             points = 1;
-        console.log("points",points);
         return points;
     }
     //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
@@ -212,18 +221,24 @@ module.exports = class CurrentInHouseService {
             console.log(row);
         });
     }
-    //Re-opens the sign ups to allow last minute people to sign up
+    //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database
     static reOpenSignUps(message) {
+        return true;
+        // sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
+        //     if (!row) return message.reply("Your current level is 0");
+        //     message.reply(`Your current level is ${row.level}`);
+        //     console.log(row);
+        // });
+    }
+
+    // adds points to the winners and detracts from the losers expects .winner team1
+    static winner(message) {
+        return true;
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("Your current level is 0");
-            message.reply(`Your current level is ${row.level}`);
-            console.log(row);
+            if (!row) return message.reply("sadly you do not have any points yet!");
+            message.reply(`you currently have ${row.points} points, good going!`);
         });
     }
-    //called by another function to create all sets of teams? - have this auto make once 10 people are hit
-    // static makeTeams(message) {
-
-    // }
     //creates a premade team of 5 somehow
     static makeWholeTeam(message) {
         return true;
@@ -232,15 +247,23 @@ module.exports = class CurrentInHouseService {
             message.reply(`you currently have ${row.points} points, good going!`);
         });
     }
-    //shows the list of current teams full or incomplete
-    static showTeams(message) {
-        return true;
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("sadly you do not have any points yet!");
-            message.reply(`you currently have ${row.points} points, good going!`);
+    //TODO: shows the list of current teams full or incomplete
+    static showTeams(message, bot, inhouseId) {
+        sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,t.TeamId, t.teamName
+        FROM InHouseRoster ihr
+            LEFT JOIN RosterTeamBridge r
+                ON ihr.Rosterid = r.RosterId
+            Left JOIN Team t
+                ON r.TeamId = t.TeamId
+        where ihr.RosterId in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${inhouseId}"
+        ORDER BY t.TeamId asc`).then(rows => {
+            if (!rows) return message.reply("There are no teams Yet!!!");
+            console.log(rows)
+            // TODO add reply to channel
+            //message.reply(`you currently have ${row.points} points, good going!`);
         });
     }
-    // ends the in-house for the day
+    // TODO: ends the in-house for the day
     static endInhouse(message) {
         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) return message.reply("sadly you do not have any points yet!");

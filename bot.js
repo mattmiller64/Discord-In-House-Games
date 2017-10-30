@@ -51,7 +51,7 @@ bot.on("message", (message) => {
     }
     //CurrentInhouseService 
     // can only be called by a mod
-    else if (message.member.roles.some(r => ["Mod", "Executive Officer"].includes(r.name))) {
+    else if (message.member.roles.some(r => config.roles.includes(r.name))) {
         if (message.content.startsWith(prefix + 'startSignUps')) { // opens the sign ups for the current in-houses today
             if (inHouseOpen) {
                 message.reply("inHouses are already open");
@@ -67,16 +67,19 @@ bot.on("message", (message) => {
                 message.reply("inHouses are already open");
             } else {
                 inHouseOpen = true;
-                CurrentInhouseService.reOpenSignUps(message);
+                //CurrentInhouseService.reOpenSignUps(message);
             }
         }
-        // end sign ups can only be called by a mod
+        // end sign ups can only be called by a mod - this and endInHouse are probably duplicates
         else if (message.content.startsWith(prefix + 'endSignUps')) { // this will also stop sign ups - if a team doesnt have 10 players, the team will disband
             inHouseOpen = false;
             CurrentInhouseService.endSignUps(message); //this probably doesnt need to do anything
         } // can only be called by a mod
         else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
             CurrentInhouseService.showTeams(message);
+        } // can only be called by a mod
+        else if (message.content.startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
+            CurrentInhouseService.winner(message);
         } // can only be called by a mod
         else if (inHouseOpen) {
             if (message.content.startsWith(prefix + 'endInhouse')) { // ends the in-house games for the day
@@ -85,15 +88,14 @@ bot.on("message", (message) => {
             }
             //mods can still sign up ;)
             if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
-                CurrentInhouseService.signUp(message);
+                CurrentInhouseService.signUp(message,bot);
             }
         }
     }
-
-    // users can only sign up / end sign up if it is currently open 
+    // users can only sign up
     else if (inHouseOpen) {
         if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
-            CurrentInhouseService.signUp(message);
+            CurrentInhouseService.signUp(message,bot);
         }
     }
 });
