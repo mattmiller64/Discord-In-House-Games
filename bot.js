@@ -1,6 +1,5 @@
 //import { ScoreService } from "./services/score.service";
 var LadderService = require('./services/ladder.service');
-var ScoreService = require('./services/score.service');
 var CurrentInhouseService = require('./services/currentinhouse.service');
 
 var Discord = require('discord.js');
@@ -28,13 +27,7 @@ bot.on("message", (message) => {
     if (message.author.bot) return; // Ignore bots.    
     if (message.channel.type === "dm") return; // Ignore DM channels.    
     if (message.channel.type !== "text") return;
-    // //ScoreService - test
-    // ScoreService.addScore(message);
-    // if (message.content.startsWith(prefix + 'level')) {
-    //     ScoreService.getLevel(message);
-    // } else if (message.content.startsWith(prefix + 'points')) {
-    //     ScoreService.getPoints(message);
-    // }
+
     //LadderService
     else if (message.content.startsWith(prefix + 'addUser')) { //adds a user to the db
         LadderService.addUser(message);
