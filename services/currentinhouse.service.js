@@ -1,5 +1,6 @@
 const sql = require("sqlite");
 sql.open("./db/inhouseDB.sqlite");
+var LadderService = require('./ladder.service');
 //keeps track of teams for a certain day
 
 module.exports = class CurrentInHouseService {
@@ -248,11 +249,42 @@ module.exports = class CurrentInHouseService {
 
     // adds points to the winners and detracts from the losers expects .winner team1
     static winner(message) {
-        return true;
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("sadly you do not have any points yet!");
-            message.reply(`you currently have ${row.points} points, good going!`);
-        });
+        var parts = message.content.split(" ");
+        var teamName = parts[1];
+        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+            // expected .updatePoints <username> <points>
+            sql.get(`SELECT * FROM Team WHERE teamName ="${teamName}" AND InhouseId="${r.InhouseId}"`).then(row => {
+                console.log("row1",row)
+                if (!row) return message.reply("There is no team by that team name in the latest inhouse");
+                //get winning team by using row.TeamId
+                sql.all(`SELECT  *
+                FROM RosterTeamBridge rtb 
+                    LEFT JOIN InHouseRoster ihr
+                        ON rtb.RosterId = ihr.RosterId
+                where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows=>{
+                    for(var i = 0; i < rows.length; i++)
+                        LadderService.addPoints(message,rows[i].playerId, 5);
+                })
+                //get losing team by using row.VsId
+                sql.all(`SELECT  *
+                FROM RosterTeamBridge rtb 
+                    LEFT JOIN InHouseRoster ihr
+                        ON rtb.RosterId = ihr.RosterId
+                where rtb.TeamId = "${row.VsId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1=>{
+                    for(var i = 0; i < rows1.length; i++)
+                        LadderService.addPoints(message,rows1[i].playerId, -2);
+                })
+                sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
+                sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
+            });
+        }).then(taco=> { //Promise still not waiting correctly
+            setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
+                message.channel.send("Points updated");
+                LadderService.topForty(message);
+                return true;                
+            }, 5000);
+
+        })
     }
     // //creates a premade team of 5 somehow
     // static makeWholeTeam(message) {
@@ -294,9 +326,9 @@ module.exports = class CurrentInHouseService {
                         reply += `***** ${rows[i].teamName} - ${winnerText} *****\n`
                     }
                     reply += (`player name: ${rows[i].playerName}, rank: ${rows[i].rank}\n`);
-                   
+
                 }
-                reply += "----------------------------------------------------------------------\n"                
+                reply += "----------------------------------------------------------------------\n"
                 message.channel.send(reply);
 
             });

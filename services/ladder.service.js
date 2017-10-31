@@ -53,15 +53,30 @@ module.exports = class LadderService {
         var parts = message.content.split(" ");
         var username = parts[1];
         var points = parts[2];
-        sql.get(`SELECT * FROM ladder WHERE username ="${username}"`).then(row => {
+        //find userId
+        sql.get(`SELECT * FROM ladder where username="${username}"`).then(row=> {
+            return this.addPoints(message,row.userId, points);
+        }).catch(()=>{
+            return false;
+        })
+
+    }
+    static addPoints(message,userId, points){
+        console.log("here");
+        console.log(userId)
+        sql.get(`SELECT * FROM ladder WHERE userId ="${userId}"`).then(row => {
             if (!row) {
+                console.log("User of ID : " + userId+" was not found.");
+                message.channel.send("A user was not found, please have an admin check the logs.")
                 return false
             }
             else {
                 var p = +row.points + +points;
                 console.log(p);
-                sql.run(`UPDATE ladder SET points = ${p} WHERE username = "${username}"`);
-                return true;
+                sql.run(`UPDATE ladder SET points = ${p} WHERE userId = "${userId}"`).then(row=> {
+                    console.log("points added to: ",row);
+                    return true;
+                });
             }
         }).catch(() => {
             console.error;
