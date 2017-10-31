@@ -75,9 +75,22 @@ module.exports = class CurrentInHouseService {
         })
 
     }
+    static leftover(message) {
+        sql.all(`Select ihr.* from InHouseRoster ihr 
+        Left join RosterTeamBridge rtb
+            ON ihr.RosterId = rtb.RosterId AND ihr.inhouseId = rtb.inhouseId
+        Where rtb.RosterId is null
+        `).then((rows)=> {
+            if(!rows)
+            {
+                messae.reply("Everyone is currently signed up with a team :)")
+            }
+            message.reply(`There are ${rows.length} people that have not been matched to a team, WE NEED ${(10-rows.length)} MORE LETS GO!!!`)
+        })
+    }
     static handleTenSignedUp(message, inhouseId) {
         sql.get(`SELECT COUNT(*) as count FROM InHouseRoster where RosterId not in (Select RosterId from RosterTeamBridge)  AND inhouseId = "${inhouseId}"`).then((result) => {
-            if (result.count >= 10) {
+            if (result.count == 10) {
                 console.log("need to create teams")
                 this.createTeams(message, inhouseId);
             }
@@ -232,19 +245,12 @@ module.exports = class CurrentInHouseService {
     }
     //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
     static endSignUps(message) {
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("Your current level is 0");
-            message.reply(`Your current level is ${row.level}`);
-        });
+        message.channel.send("Sign Ups are now over, to reopen use the reopen command, otherwise be sure every team's winners and losers are entered using the winner command.")
+        return true;
     }
     //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database
     static reOpenSignUps(message) {
-        return true;
-        // sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-        //     if (!row) return message.reply("Your current level is 0");
-        //     message.reply(`Your current level is ${row.level}`);
-        //     console.log(row);
-        // });
+        message.channel.send("Sign Ups are reopenned, use the signUp command to signup!!!")
     }
 
     // adds points to the winners and detracts from the losers expects .winner team1
@@ -254,47 +260,51 @@ module.exports = class CurrentInHouseService {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
             // expected .updatePoints <username> <points>
             sql.get(`SELECT * FROM Team WHERE teamName ="${teamName}" AND InhouseId="${r.InhouseId}"`).then(row => {
-                console.log("row1",row)
+                if (row.isWinner == "true" || row.isWinner == "false") {
+                    message.reply("These teams have already played.")
+                    return true;
+                }
+                sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
+                sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
                 if (!row) return message.reply("There is no team by that team name in the latest inhouse");
                 //get winning team by using row.TeamId
                 sql.all(`SELECT  *
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
-                where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows=>{
-                    for(var i = 0; i < rows.length; i++)
-                        LadderService.addPoints(message,rows[i].playerId, 5);
+                where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows => {
+                    for (var i = 0; i < rows.length; i++)
+                        LadderService.addPoints(message, rows[i].playerId, 5);
                 })
                 //get losing team by using row.VsId
                 sql.all(`SELECT  *
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
-                where rtb.TeamId = "${row.VsId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1=>{
-                    for(var i = 0; i < rows1.length; i++)
-                        LadderService.addPoints(message,rows1[i].playerId, -2);
+                where rtb.TeamId = "${row.VsId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1 => {
+                    for (var i = 0; i < rows1.length; i++)
+                        LadderService.addPoints(message, rows1[i].playerId, -2);
+                }).then(taco => { //Promise still not waiting correctly
+                    setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
+                        message.channel.send("Points updated");
+                        LadderService.topForty(message);
+                        return true;
+                    }, 5000);
                 })
-                sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
-                sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
             });
-        }).then(taco=> { //Promise still not waiting correctly
-            setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
-                message.channel.send("Points updated");
-                LadderService.topForty(message);
-                return true;                
-            }, 5000);
-
         })
     }
-    // //creates a premade team of 5 somehow
-    // static makeWholeTeam(message) {
-    //     return true;
-    //     sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-    //         if (!row) return message.reply("sadly you do not have any points yet!");
-    //         message.reply(`you currently have ${row.points} points, good going!`);
-    //     });
-    // }
-    //TODO: shows the list of current teams full or incomplete
+    /* //creates a premade team of 5 somehow
+     static makeWholeTeam(message) {
+         return true;
+         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
+             if (!row) return message.reply("sadly you do not have any points yet!");
+             message.reply(`you currently have ${row.points} points, good going!`);
+         });
+     }
+    */
+
+    //shows the list of current teams that are created - played and unplayed matches.
     static showTeams(message) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,t.TeamId, t.teamName, t.isWinner, l.rank
@@ -346,11 +356,9 @@ module.exports = class CurrentInHouseService {
         message.channel.send(reply);
     }
     // TODO: ends the in-house for the day
+    //right now this is just a flag, to reset they have to hit .startSignUps, otherwise the code will always use the most recently done inhouse
     static endInhouse(message) {
-        sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-            if (!row) return message.reply("sadly you do not have any points yet!");
-            message.reply(`you currently have ${row.points} points, good going!`);
-        });
+        this.endSignUps(message);
     }
 
 }
