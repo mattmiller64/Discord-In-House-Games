@@ -58,10 +58,12 @@ bot.on("message", (message) => {
             } else {
                 inHouseOpen = true;
                 CurrentInhouseService.startSignUps(message);
-                message.reply(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
+                message.channel.send(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
             }
         }
         // can only be called by a mod
+        // potential bug, if you close inhouses, then you decide to start a new one - itll just be obnoxious, dont do that, i dont think it needs to make a bug,
+        //it will leave anyone who signed up but didnt get assigned a team out to dry, but if they ressign up all is well.
         else if (message.content.startsWith(prefix + 'reOpenSignUps')) { // Re-opens the sign ups to allow last minute people to sign up
             if (inHouseOpen) {
                 message.reply("inHouses are already open");
@@ -88,15 +90,18 @@ bot.on("message", (message) => {
             }
             //mods can still sign up ;)
             if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
-                CurrentInhouseService.signUp(message,bot);
+                CurrentInhouseService.signUp(message);
             }
         }
     }
     // users can only sign up
     else if (inHouseOpen) {
         if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
-            CurrentInhouseService.signUp(message,bot);
-        }
+            CurrentInhouseService.signUp(message);
+        } 
+    }
+    else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
+        CurrentInhouseService.showTeams(message);
     }
 });
 
