@@ -80,9 +80,8 @@ module.exports = class CurrentInHouseService {
         Left join RosterTeamBridge rtb
             ON ihr.RosterId = rtb.RosterId AND ihr.inhouseId = rtb.inhouseId
         Where rtb.RosterId is null
-        `).then((rows)=> {
-            if(!rows)
-            {
+        `).then((rows) => {
+            if (!rows) {
                 messae.reply("Everyone is currently signed up with a team :)")
             }
             message.reply(`There are ${rows.length} people that have not been matched to a team, WE NEED ${(10-rows.length)} MORE LETS GO!!!`)
@@ -243,11 +242,7 @@ module.exports = class CurrentInHouseService {
             points = 1;
         return points;
     }
-    //this will also stop sign ups - if a team doesnt have 10 players, the team will disband
-    static endSignUps(message) {
-        message.channel.send("Sign Ups are now over, to reopen use the reopen command, otherwise be sure every team's winners and losers are entered using the winner command.")
-        return true;
-    }
+
     //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database
     static reOpenSignUps(message) {
         message.channel.send("Sign Ups are reopenned, use the signUp command to signup!!!")
@@ -358,7 +353,7 @@ module.exports = class CurrentInHouseService {
     // TODO: ends the in-house for the day
     //right now this is just a flag, to reset they have to hit .startSignUps, otherwise the code will always use the most recently done inhouse
     static endInhouse(message) {
-        this.endSignUps(message);
+        message.channel.send("Sign Ups are now over, to reopen use the reopen command, otherwise be sure every team's winners and losers are entered using the winner command.")
+        return true;
     }
-
 }

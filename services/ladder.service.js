@@ -23,7 +23,8 @@ module.exports = class LadderService {
     static async addUser(message) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
                 if (!row) {
-                    sql.run("INSERT INTO ladder (userId, username, rank, points) VALUES (?, ?, ?, ?)", [message.author.id, message.author.username, ranks.unranked, 0]).then(() => {
+                    sql.run("INSERT INTO ladder (userId, username, rank, points,LastPointsUpdateDate) VALUES (?, ?, ?, ?,?)", [message.author.id, message.author.username, ranks.unranked, 0, new Date().toJSON().slice(0, 10).toString()])
+                    .then(() => {
                         message.reply("You were successfully added, dont forget to add your rank by using the updateRank <rank> command, type availableRanks command for help.")
                     });
                 } else {
@@ -35,8 +36,8 @@ module.exports = class LadderService {
             })
             .catch(() => {
                 console.error;
-                sql.run("CREATE TABLE IF NOT EXISTS ladder (userId TEXT, username TEXT, rank TEXT , points INTEGER)").then(() => {
-                    sql.run("INSERT INTO ladder (userId, username, rank, points) VALUES (?, ?, ?, ?)", [message.author.id, message.author.username, ranks.unranked, 0]);
+                sql.run("CREATE TABLE IF NOT EXISTS ladder (userId TEXT, username TEXT, rank TEXT , points INTEGER, LastPointsUpdateDate TEXT)").then(() => {
+                    sql.run("INSERT INTO ladder (userId, username, rank, points,LastPointsUpdateDate) VALUES (?, ?, ?, ?,?)", [message.author.id, message.author.username, ranks.unranked, 0, new Date().toJSON().slice(0, 10).toString()]);
                 });
             });
     }
@@ -77,7 +78,7 @@ module.exports = class LadderService {
                 if (p < 0) { //ensure points dont go negative
                     p = 0;
                 }
-                sql.run(`UPDATE ladder SET points = ${p} WHERE userId = "${userId}"`).then(row => {
+                sql.run(`UPDATE ladder SET points = ${p}, LastPointsUpdateDate = "${new Date().toJSON().slice(0, 10).toString()}" WHERE userId = "${userId}"`).then(row => {
                     return true;
                 });
             }
