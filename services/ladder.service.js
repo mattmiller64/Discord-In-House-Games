@@ -20,7 +20,7 @@ var ranks = {
 
 module.exports = class LadderService {
     // expected .addUser
-    static async addUser(message) {
+    static addUser(message) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
                 if (!row) {
                     sql.run("INSERT INTO ladder (userId, username, rank, points,LastPointsUpdateDate) VALUES (?, ?, ?, ?,?)", [message.author.id, message.author.username, ranks.unranked, 0, new Date().toJSON().slice(0, 10).toString()])

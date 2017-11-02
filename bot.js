@@ -92,6 +92,8 @@ bot.on("message", (message) => {
                 CurrentInhouseService.signUp(message);
             } else if (message.content.startsWith(prefix + 'leftover')) {
                 CurrentInhouseService.leftover(message);
+            } else if (message.content.startsWith(prefix + 'createTeams')) { //signs a user up for this days inhouse
+                CurrentInhouseService.createTeams(message);
             }
         }
     }
