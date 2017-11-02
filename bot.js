@@ -33,8 +33,7 @@ bot.on("message", (message) => {
     else if (message.content.startsWith(prefix + 'showCommands')) {
         message.channel.send(commands);
         message.channel.send(commands2);
-    }
-    else if (message.content.startsWith(prefix + 'help')) {
+    } else if (message.content.startsWith(prefix + 'help')) {
         message.channel.send(help);
         //message.channel.send(commands2);
     }
@@ -72,7 +71,7 @@ bot.on("message", (message) => {
                 message.reply("inHouses are already open");
             } else {
                 inHouseOpen = true;
-                //CurrentInhouseService.reOpenSignUps(message);
+                message.reply("inHouses are reOpened");
             }
         }
         // end sign ups can only be called by a mod - this and endInHouse are probably duplicates
@@ -94,6 +93,8 @@ bot.on("message", (message) => {
                 CurrentInhouseService.leftover(message);
             } else if (message.content.startsWith(prefix + 'createTeams')) { //signs a user up for this days inhouse
                 CurrentInhouseService.createTeams(message);
+            } else if (message.content.startsWith(prefix + 'remove')) { // removes user from these inhouses 
+                CurrentInhouseService.removeFromInhouse(message);
             }
         }
     }
@@ -104,6 +105,8 @@ bot.on("message", (message) => {
         }
     } else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
         CurrentInhouseService.showTeams(message);
+    } else if (message.content.startsWith(prefix + 'remove')) { // removes user from these inhouses
+        CurrentInhouseService.removeFromInhouse(message);
     }
 });
 
