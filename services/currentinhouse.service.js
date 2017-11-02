@@ -93,21 +93,43 @@ module.exports = class CurrentInHouseService {
         Where rtb.RosterId is null AND ihr.InhouseId = "${ihd.InhouseId}"
         `).then((rows) => {
                 if (!rows) {
-                    messae.reply("Everyone is currently signed up with a team :) (or no people have signed up)")
+                    message.reply("Everyone is currently signed up with a team :) (or no people have signed up)")
                 }
                 if (rows.length % 10 == 0)
-                    message.reply(`There are ${rows.length} people that have not been matched to a team`);
+                    message.reply(`There are ${rows.length} people signed up that have not been matched to a team`);
                 else
-                    message.reply(`There are ${rows.length} people that have not been matched to a team, WE NEED ${(10 - rows.length%10)} MORE LETS GO!!!`)
+                    message.reply(`There are ${rows.length} people signed up that have not been matched to a team, WE NEED ${(10 - rows.length%10)} MORE LETS GO!!!`)
             })
         })
     }
-
+    static laddersignups(message) {
+        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
+            sql.all(`Select ihr.*, l.* from InHouseRoster ihr 
+            LEFT JOIN ladder l
+                ON ihr.playerId = l.userId 
+        WHERE ihr.InhouseId = "${ihd.InhouseId}" AND l.rank is not null
+        `).then((rows) => {
+                if (!rows || rows.length == 0) {
+                    message.reply("No one has signed up yet :( /tableflip")
+                } else {
+                    var reply = `\`\`\`**Current Players Signed Up**\n`
+                    for (var i = 0; i < rows.length; i++) {
+                        var name = rows[i].nickname;
+                        if (!name)
+                            name = rows[i].playerName
+                        reply += (`${i+1}. ${name} \n`);
+                    }
+                    reply += `\`\`\``
+                    message.channel.send(reply);
+                }
+            })
+        })
+    }
     static createTeams(message) { // if there is not enough to make teams, make sure we drop the newest added. (order by id cause date sorting sucks)
         //get people ordered by rosterId joined with ladder table to get ranks
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
             sql.get(`SELECT COUNT(*) as count from InHouseRoster where InhouseId = "${ihd.InhouseId}" AND RosterId not in (Select RosterId from RosterTeamBridge)`).then((row) => { //dont get people already on a team
-                if (!row || row < 10) {
+                if (!row || row.count < 10) {
                     message.reply("no one/ not enough people have signed up yet that are not already on teams! Use the leftover command to see how many are missing or show teams to see those currently on a team.")
                     return true;
                 }

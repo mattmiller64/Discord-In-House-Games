@@ -30,31 +30,31 @@ bot.on("message", (message) => {
     if (message.channel.type !== "text") return;
 
     //Base
-    else if (message.content.startsWith(prefix + 'showCommands')) {
+    else if (message.content.toLowerCase().startsWith(prefix + 'showcommands')) {
         message.channel.send(commands);
         message.channel.send(commands2);
-    } else if (message.content.startsWith(prefix + 'help')) {
+    } else if (message.content.toLowerCase().startsWith(prefix + 'help')) {
         message.channel.send(help);
         //message.channel.send(commands2);
     }
     //LadderService
-    else if (message.content.startsWith(prefix + 'addUser')) { //adds a user to the db
+    else if (message.content.toLowerCase().startsWith(prefix + 'adduser')) { //adds a user to the db
         LadderService.addUser(message);
-    } else if (message.content.startsWith(prefix + 'availableRanks')) { //shows user available ranks and how to update theirs
+    } else if (message.content.toLowerCase().startsWith(prefix + 'availableranks')) { //shows user available ranks and how to update theirs
         LadderService.availableRanks(message);
-    } else if (message.content.startsWith(prefix + 'stats')) { //gets users info
+    } else if (message.content.toLowerCase().startsWith(prefix + 'stats')) { //gets users info
         LadderService.getUserInfo(message);
-    } else if (message.content.startsWith(prefix + 'updatePoints') && message.member.roles.some(r => config.roles.includes(r.name))) { //updates users points - can only be called by mod to manually adjust a users points
+    } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && message.member.roles.some(r => config.roles.includes(r.name))) { //updates users points - can only be called by mod to manually adjust a users points
         LadderService.updatePoints(message);
-    } else if (message.content.startsWith(prefix + 'updateRank')) { //updates the users rank
+    } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
         LadderService.updateRank(message);
-    } else if (message.content.startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
+    } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
         LadderService.topForty(message);
     }
     //CurrentInhouseService 
     // can only be called by a mod
     else if (message.member.roles.some(r => config.roles.includes(r.name))) {
-        if (message.content.startsWith(prefix + 'openInhouse')) { // opens the sign ups for the current in-houses today
+        if (message.content.toLowerCase().startsWith(prefix + 'openinhouse')) { // opens the sign ups for the current in-houses today
             if (inHouseOpen) {
                 message.reply("inHouses are already open");
             } else {
@@ -66,7 +66,7 @@ bot.on("message", (message) => {
         // can only be called by a mod
         // potential bug, if you close inhouses, then you decide to start a new one - itll just be obnoxious, dont do that, i dont think it needs to make a bug,
         //it will leave anyone who signed up but didnt get assigned a team out to dry, but if they ressign up all is well.
-        else if (message.content.startsWith(prefix + 'reOpenSignUps')) { // Re-opens the sign ups to allow last minute people to sign up
+        else if (message.content.toLowerCase().startsWith(prefix + 'repensignups')) { // Re-opens the sign ups to allow last minute people to sign up
             if (inHouseOpen) {
                 message.reply("inHouses are already open");
             } else {
@@ -75,37 +75,41 @@ bot.on("message", (message) => {
             }
         }
         // end sign ups can only be called by a mod - this and endInHouse are probably duplicates
-        else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
+        else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
             CurrentInhouseService.showTeams(message);
         } // can only be called by a mod
-        else if (message.content.startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
+        else if (message.content.toLowerCase().startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
             CurrentInhouseService.winner(message);
         } // can only be called by a mod
         else if (inHouseOpen) {
-            if (message.content.startsWith(prefix + 'closeInhouse')) { // ends the in-house games for the day
+            if (message.content.toLowerCase().startsWith(prefix + 'closeinhouse')) { // ends the in-house games for the day
                 inHouseOpen = false;
                 CurrentInhouseService.endInhouse(message); //this doesnt do anything special either, really to end an inhouse you just create a new one with startSignUps
             }
             //mods can still sign up ;)
-            else if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
+            else if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
                 CurrentInhouseService.signUp(message);
-            } else if (message.content.startsWith(prefix + 'leftover')) {
+            } else if (message.content.toLowerCase().startsWith(prefix + 'leftover')) {
                 CurrentInhouseService.leftover(message);
-            } else if (message.content.startsWith(prefix + 'createTeams')) { //signs a user up for this days inhouse
+            } else if (message.content.toLowerCase().startsWith(prefix + 'createteams')) { //signs a user up for this days inhouse
                 CurrentInhouseService.createTeams(message);
-            } else if (message.content.startsWith(prefix + 'remove')) { // removes user from these inhouses 
+            } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses 
                 CurrentInhouseService.removeFromInhouse(message);
+            } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
+                CurrentInhouseService.laddersignups(message);
             }
         }
     }
-    // users can only sign up and show the current teams
+    // users can only sign up and show the current teams laddersignups
     else if (inHouseOpen) {
-        if (message.content.startsWith(prefix + 'signUp')) { //signs a user up for this days inhouse
+        if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
             CurrentInhouseService.signUp(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
+            CurrentInhouseService.laddersignups(message);
         }
-    } else if (message.content.startsWith(prefix + 'showTeams')) { // shows the list of current teams full or incomplete
+    } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
         CurrentInhouseService.showTeams(message);
-    } else if (message.content.startsWith(prefix + 'remove')) { // removes user from these inhouses
+    } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses
         CurrentInhouseService.removeFromInhouse(message);
     }
 });
@@ -169,10 +173,13 @@ command will show the current teams and their standings (ie who won or if they h
 command will mark a team as the winner and mark their opponent as the loser, NOTE: this will add 5 points to every player in the winning team and subtract 2 points from every player on the losing team NOTE2: YOU CANNOT GO BELOW 0 POINTS!
 
 **leftover**
-command will show you the number of people who are currently signed up without a team and those needed to make a new set of teams.\`\`\``;
+command will show you the number of people who are currently signed up without a team and those needed to make a new set of teams.
+
+**whosesignedup**
+command will show you everyone who has signed up so far. \`\`\``;
 
 
-var help = `Preface: all commands shown will be prefixed with ${prefix}  - ie this function is help, called by ${prefix}help
+var help = `Preface: all commands shown will be prefixed with ${prefix}  ie this function is help, called by ${prefix}help
 Welcome to the Inhouse Games!
 
 1. If you have not already, please use the addUser command followed by the updateRank command to add yourself to the database and fill in your rank this will look like this
