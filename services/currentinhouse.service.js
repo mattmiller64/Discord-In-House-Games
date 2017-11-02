@@ -276,21 +276,21 @@ module.exports = class CurrentInHouseService {
         var parts = message.content.split(" ");
         var teamName = parts[1];
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
-            // expected .updatePoints <username> <points>
             sql.get(`SELECT * FROM Team WHERE teamName ="${teamName}" AND InhouseId="${r.InhouseId}"`).then(row => {
+                if (!row) return message.reply("There is no team by that team name in the latest inhouse");
                 if (row.isWinner == "true" || row.isWinner == "false") {
                     message.reply("These teams have already played.")
                     return true;
                 }
                 sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
                 sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
-                if (!row) return message.reply("There is no team by that team name in the latest inhouse");
                 //get winning team by using row.TeamId
                 sql.all(`SELECT  *
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
                 where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows => {
+                    console.log("rows",rows);
                         for (var i = 0; i < rows.length; i++)
                             LadderService.addPoints(message, rows[i].playerId, 5);
                     })
@@ -337,11 +337,10 @@ module.exports = class CurrentInHouseService {
         ORDER BY t.TeamId asc`).then(rows => {
                     if (!rows) return message.reply("There are no teams Yet!!!");
                     if (rows.length == 0) return message.channel.send("There are no teams yet!!!!")
-                    // TODO add reply to channel
                     var reply = "\`\`\`";
                     message.channel.send(`There are some teams here :D`);
                     for (var i = 0; i < rows.length; i++) {
-                        if (i % 10 == 0 && i!=0) {
+                        if (i % 10 == 0 && i != 0) {
                             reply += `\`\`\`
                             \`\`\``
                         }
