@@ -180,7 +180,8 @@ ${prefix}updateRank silver\`\`\`
 4. Team assigning will be automatic, but if you forgot what team you are on, use the showTeams command to see all current teams.
 5. Then get together with your team and come up with a combat plan! (decide your lanes).
 6. Contact someone from the other team to set up the match.
-7. Once the match is over, let one of the inhouse admins know who won so they can record it. (Mod remembet this is - winner TeamName)
-8. This will update the winners points by +5 and the loser will lose 2 points.
-9. You can check your current info using the stats command
+7. Dont forget to get a tournament code by an in-house admin
+8. Once the match is over, let one of the inhouse admins know who won so they can record it. (Mod remembet this is - winner TeamName)
+9. This will update the winners points by +5 and the loser will lose 2 points.
+10. You can check your current info using the stats command
 `
