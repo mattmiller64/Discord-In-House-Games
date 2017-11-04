@@ -107,10 +107,13 @@ bot.on("message", (message) => {
         } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
             CurrentInhouseService.laddersignups(message);
         }
+        else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
+            CurrentInhouseService.showTeams(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses
+            CurrentInhouseService.removeFromInhouse(message);
+        }
     } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
         CurrentInhouseService.showTeams(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses
-        CurrentInhouseService.removeFromInhouse(message);
     }
 });
 

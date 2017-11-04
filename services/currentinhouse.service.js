@@ -135,7 +135,7 @@ module.exports = class CurrentInHouseService {
                 }
                 var leftover = row.count - (row.count % 10);
                 //TODO: Change this to select all from teams that have not played either, maybe make a remake teams that will remake all and this will just remake any not on?
-                sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,ihr.nickname,l.Rank
+                sql.all(`SELECT ihr.*, l.*
             FROM InHouseRoster ihr
                 LEFT JOIN ladder l
                     ON ihr.playerId = l.userId
@@ -360,7 +360,7 @@ module.exports = class CurrentInHouseService {
     //shows the list of current teams that are created - played and unplayed matches.
     static showTeams(message) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
-            sql.all(`SELECT ihr.RosterId, ihr.InhouseId,ihr.playerName,ihr.playerId,ihr.date,t.TeamId, t.teamName, t.isWinner, l.rank
+            sql.all(`SELECT ihr.*, l.*, t.*
         FROM InHouseRoster ihr
             LEFT JOIN RosterTeamBridge r
                 ON ihr.Rosterid = r.RosterId
