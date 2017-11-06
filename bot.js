@@ -23,12 +23,13 @@ bot.on('ready', function (evt) {
 
 const prefix = config.prefix; //gets prefix from config file, will look cleaner to just use prefix
 
+//if 169468313577979905 allow
+
 bot.on("message", (message) => {
     //Our bot needs to know if it will execute a command
     if (message.author.bot) return; // Ignore bots.    
     if (message.channel.type === "dm") return; // Ignore DM channels.    
     if (message.channel.type !== "text") return;
-
     //Base
     else if (message.content.toLowerCase().startsWith(prefix + 'showcommands')) {
         message.channel.send(commands);
@@ -44,16 +45,18 @@ bot.on("message", (message) => {
         LadderService.availableRanks(message);
     } else if (message.content.toLowerCase().startsWith(prefix + 'stats')) { //gets users info
         LadderService.getUserInfo(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && message.member.roles.some(r => config.roles.includes(r.name))) { //updates users points - can only be called by mod to manually adjust a users points
+    } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905') { //updates users points - can only be called by mod to manually adjust a users points
         LadderService.updatePoints(message);
     } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
         LadderService.updateRank(message);
     } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
+        console.log("ladder")
         LadderService.topForty(message);
     }
+   
     //CurrentInhouseService 
-    // can only be called by a mod
-    else if (message.member.roles.some(r => config.roles.includes(r.name))) {
+    // can only be called by a mod or me <3
+    else if (message.member.roles.some(r => config.roles.includes(r.name))|| message.author.id == '169468313577979905') {
         if (message.content.toLowerCase().startsWith(prefix + 'openinhouse')) { // opens the sign ups for the current in-houses today
             if (inHouseOpen) {
                 message.reply("inHouses are already open");
@@ -93,10 +96,14 @@ bot.on("message", (message) => {
                 CurrentInhouseService.leftover(message);
             } else if (message.content.toLowerCase().startsWith(prefix + 'createteams')) { //signs a user up for this days inhouse
                 CurrentInhouseService.createTeams(message);
-            } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses 
+            } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses 
                 CurrentInhouseService.removeFromInhouse(message);
             } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
                 CurrentInhouseService.laddersignups(message);
+            } else if (message.content.toLowerCase().startsWith(prefix + 'addtoteam')) {
+                CurrentInhouseService.manuallyAddUserToTeam(message);
+            } else if (message.content.toLowerCase().startsWith(prefix + 'removefromteam')) {
+                CurrentInhouseService.manuallyRemoveUserFromTeam(message);
             }
         }
     }
@@ -109,7 +116,7 @@ bot.on("message", (message) => {
         }
         else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
             CurrentInhouseService.showTeams(message);
-        } else if (message.content.toLowerCase().startsWith(prefix + 'remove')) { // removes user from these inhouses
+        } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses
             CurrentInhouseService.removeFromInhouse(message);
         }
     } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
@@ -157,6 +164,9 @@ command is used to sign up for the inhouses today, this is only available when t
 
 showTeams
 command is used to show the current teams and their opponents.
+
+removeme
+command removes you from sign ups (if you have been assigned to a team and need to leave please contact a mod)
 
 ***MORE MOD Commands***
 
