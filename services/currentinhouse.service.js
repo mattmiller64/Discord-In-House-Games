@@ -12,18 +12,18 @@ module.exports = class CurrentInHouseService {
     // starts the sign ups for the current in-houses
     static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
-            //row gets the most recent game to increment the name from
-            sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
-                new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
-            ])
-        })
+                //row gets the most recent game to increment the name from
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
+                    new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
+                ])
+            })
             .catch(() => {
                 console.error;
                 sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
-                    sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1",
-                        new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
-                    ]);
-                })
+                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1",
+                            new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
+                        ]);
+                    })
                     .catch(() => {
                         console.log("Creating and inserting into CurrentInHouse - error occured")
                     });
@@ -40,21 +40,21 @@ module.exports = class CurrentInHouseService {
                     return false;
                 }
                 sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}"`).then((row2) => {
-                    if (row2) {
-                        message.reply("You have already signed up for todays InHouses");
-                        return false;
-                    }
-                    // TODO: NEED TO CHECK TO MAKE SURE THEY ARE IN THE LADDER? - should we add the ladder id to the roster rather than the player info? - who knows, but im doing it my way
-                    if (!row2) {
-                        //if not found, go ahead and add them               
-                        sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname) VALUES (?, ?, ?, ?, ?,?)", [null, row.InhouseId, message.author.username,
-                            message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname
-                        ]).then(() => {
-                            message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
-                            return true;
-                        })
-                    }
-                }) //if the db doesnt exist then they must not have been added so create the table and add them as well, set up the team and RosterTeamBridge db
+                        if (row2) {
+                            message.reply("You have already signed up for todays InHouses");
+                            return false;
+                        }
+                        // TODO: NEED TO CHECK TO MAKE SURE THEY ARE IN THE LADDER? - should we add the ladder id to the roster rather than the player info? - who knows, but im doing it my way
+                        if (!row2) {
+                            //if not found, go ahead and add them               
+                            sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname) VALUES (?, ?, ?, ?, ?,?)", [null, row.InhouseId, message.author.username,
+                                message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname
+                            ]).then(() => {
+                                message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
+                                return true;
+                            })
+                        }
+                    }) //if the db doesnt exist then they must not have been added so create the table and add them as well, set up the team and RosterTeamBridge db
                     .catch(() => {
                         console.log('inhouseroster db does not exist, creating db then inserting user')
                         console.error;
@@ -92,14 +92,14 @@ module.exports = class CurrentInHouseService {
             ON ihr.RosterId = rtb.RosterId AND ihr.InhouseId = rtb.InhouseId
         Where rtb.RosterId is null AND ihr.InhouseId = "${ihd.InhouseId}"
         `).then((rows) => {
-                    if (!rows) {
-                        message.reply("Everyone is currently signed up with a team :) (or no people have signed up)")
-                    }
-                    if (rows.length % 10 == 0)
-                        message.reply(`There are ${rows.length} people signed up that have not been matched to a team`);
-                    else
-                        message.reply(`There are ${rows.length} people signed up that have not been matched to a team, WE NEED ${(10 - rows.length % 10)} MORE LETS GO!!!`)
-                })
+                if (!rows) {
+                    message.reply("Everyone is currently signed up with a team :) (or no people have signed up)")
+                }
+                if (rows.length % 10 == 0)
+                    message.reply(`There are ${rows.length} people signed up that have not been matched to a team`);
+                else
+                    message.reply(`There are ${rows.length} people signed up that have not been matched to a team, WE NEED ${(10 - rows.length % 10)} MORE LETS GO!!!`)
+            })
         })
     }
     static laddersignups(message) {
@@ -109,20 +109,20 @@ module.exports = class CurrentInHouseService {
                 ON ihr.playerId = l.userId 
         WHERE ihr.InhouseId = "${ihd.InhouseId}" AND l.rank is not null
         `).then((rows) => {
-                    if (!rows || rows.length == 0) {
-                        message.reply("No one has signed up yet :( /tableflip")
-                    } else {
-                        var reply = `\`\`\`**Current Players Signed Up**\n`
-                        for (var i = 0; i < rows.length; i++) {
-                            var name = rows[i].nickname;
-                            if (!name)
-                                name = rows[i].playerName
-                            reply += (`${i + 1}. ${name} \n`);
-                        }
-                        reply += `\`\`\``
-                        message.channel.send(reply);
+                if (!rows || rows.length == 0) {
+                    message.reply("No one has signed up yet :( /tableflip")
+                } else {
+                    var reply = `\`\`\`**Current Players Signed Up**\n`
+                    for (var i = 0; i < rows.length; i++) {
+                        var name = rows[i].nickname;
+                        if (!name)
+                            name = rows[i].playerName
+                        reply += (`${i + 1}. ${name} \n`);
                     }
-                })
+                    reply += `\`\`\``
+                    message.channel.send(reply);
+                }
+            })
         })
     }
     static createTeams(message) { // if there is not enough to make teams, make sure we drop the newest added. (order by id cause date sorting sucks)
@@ -141,10 +141,10 @@ module.exports = class CurrentInHouseService {
                     ON ihr.playerId = l.userId
             where ihr.RosterId not in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${ihd.InhouseId}"
             ORDER BY ihr.RosterId LIMIT ${leftover}`).then((result) => {
-                        //this function should separate the teams based on rank - simple averaging formula used - could eventually upgrade it but meh
-                        //potential bug - if 20 people sign up too fast to keep up with - this isnt async, so it should be ok? handle this later
-                        this.balanceTeams(message, result, ihd.InhouseId);
-                    });
+                    //this function should separate the teams based on rank - simple averaging formula used - could eventually upgrade it but meh
+                    //potential bug - if 20 people sign up too fast to keep up with - this isnt async, so it should be ok? handle this later
+                    this.balanceTeams(message, result, ihd.InhouseId);
+                });
             })
         })
     }
@@ -310,10 +310,17 @@ module.exports = class CurrentInHouseService {
     //addtoteam @user team
     static manuallyAddUserToTeam(message) {
         var user = message.mentions.members.first();
-        if (!user) {
-            message.reply("you must mention a user to use this command");
+        var parts = message.content.split(" ");
+        var teamName = "";
+        if (parts.length < 3) {
+            teamName = parts[2];
+            message.reply("please make sure the command is in the format 'addtoteam @user team'")
+            return false;
         }
-        else {
+        else if (!user) {
+            message.reply("you must mention a user to use this command");
+            return false;
+        } else {
             //user.id to match this and remove him from team
             user = user.user;
             console.log("user found : ", user.username);
@@ -321,24 +328,28 @@ module.exports = class CurrentInHouseService {
                 var ihid = r.InhouseId;
                 //find roster id
                 sql.get(`SELECT * From InHouseRoster where InhouseId = '${ihid} AND playerId = '${user.id}' `).then(pRoster => {
-                    //find team id
+                    //find team id - check to make sure less than 5 are on team currently
                     sql.get(`SELECT * FROM Team where InhouseId = '${ihid}' AND 
-                    TeamId = (Select TeamId from RosterTeamBridge Where RosterId = '${pRoster.RosterId}' 
-                    AND InhouseId = '${ihid}' ORDER BY TeamId DESC LIMIT 1)`).then((result)=>{
-
-                    }).catch(()=>{
+                    TeamName = "${teamName}" AND 
+                    (Select Count(*) as count from RosterTeamBridge rtb left join Team t ON rtb.TeamId = t.TeamId WHERE rtb.InhouseId = "${ihid}"
+                     AND t.TeamName = "${TeamName}") < 5`).then((result) => {
+                         if(!result || result.count >= 5)
+                         {
+                             message.reply("Make sure that the team is in the database and has less than 5 members");
+                         }
+                         else{
+                             //insert the player
+                             sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [pRoster.RosterId, result.TeamId, ihid]).then(didwork=>{
+                                message.reply("User successfully added.")
+                             }).catch(()=>{message.reply('error adding user to team')})
+                         }
+                    }).catch(() => {
                         message.reply(`There is no team by that name`)
                     })
                 }).catch(() => {
                     message.reply(`there is no user by that name currently signed up or they are on a team in progress, please have them use the signup command or remove them from their current team or complete that game.`)
                 })
 
-                //create insert request
-                sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, ihid]).then(() => {
-                    message.channel.send(`user successfully removed ${user.username}`);
-                }).catch(() => {
-                    message.reply(`no user found in the current inhouse by that name ${user.username}`)
-                })
             }).catch(() => {
                 message.reply(`You must have an inhouse open first.`)
             })
@@ -350,18 +361,11 @@ module.exports = class CurrentInHouseService {
     //expect removefromteam @user
     static manuallyRemoveUserFromTeam(message) {
         var user = message.mentions.members.first();
-        var parts = message.content.split(" ");
-        var teamName = "";
-        if (parts.length < 3) {
-            teamName = parts[2];
-            message.reply("please make sure the command is in the format 'addtoteam @user team'")
-            return false;
-        }
-        else if (!user) {
+
+        if (!user) {
             message.reply("you must mention a user to use this command");
             return false;
-        }
-        else {
+        } else {
             // user.id to match this and add him to team
             user = user.user;
             console.log("user found : ", user.username);
@@ -369,11 +373,11 @@ module.exports = class CurrentInHouseService {
                 var ihid = r.InhouseId;
                 sql.run(`DELETE FROM RosterTeamBridge where InhouseId = "${ihid}" AND RosterId = (Select RosterId from 
                 InHouseRoster where playerId = "${user.id}" AND InhouseId = '${ihid}')  ORDER BY RosterId DESC LIMIT 1`).then((rows) => {
-                        console.log(rows);
-                        message.channel.send(`user successfully removed ${user.username}`);
-                    }).catch(() => {
-                        message.reply(`no team found in the current inhouse by that name: ${teamName}`)
-                    })
+                    console.log(rows);
+                    message.channel.send(`user successfully removed ${user.username}`);
+                }).catch(() => {
+                    message.reply(`no team found in the current inhouse by that name: ${teamName}`)
+                })
             }).catch(() => {
                 message.reply(`You must have an inhouse open first.`)
             })
@@ -400,26 +404,26 @@ module.exports = class CurrentInHouseService {
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
                 where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows => {
-                        for (var i = 0; i < rows.length; i++)
-                            LadderService.addPoints(message, rows[i].playerId, 5);
-                    })
+                    for (var i = 0; i < rows.length; i++)
+                        LadderService.addPoints(message, rows[i].playerId, 5);
+                })
                 //get losing team by using row.VsId
                 sql.all(`SELECT  *
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
                 where rtb.TeamId = "${row.VsId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1 => {
-                        for (var i = 0; i < rows1.length; i++)
-                            LadderService.addPoints(message, rows1[i].playerId, -2);
-                    }).then(taco => { //Promise still not waiting correctly
-                        setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
-                            sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
-                            sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
-                            message.channel.send("Points updated");
-                            LadderService.topForty(message);
-                            return true;
-                        }, 5000);
-                    })
+                    for (var i = 0; i < rows1.length; i++)
+                        LadderService.addPoints(message, rows1[i].playerId, -2);
+                }).then(taco => { //Promise still not waiting correctly
+                    setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
+                        sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
+                        sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
+                        message.channel.send("Points updated");
+                        LadderService.topForty(message);
+                        return true;
+                    }, 5000);
+                })
             });
         })
     }
@@ -446,34 +450,34 @@ module.exports = class CurrentInHouseService {
                 ON ihr.playerId = l.userId
             where ihr.RosterId in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${row.InhouseId}"
         ORDER BY t.TeamId asc`).then(rows => {
-                    if (!rows) return message.reply("There are no teams Yet!!!");
-                    if (rows.length == 0) return message.channel.send("There are no teams yet!!!!")
-                    var reply = "\`\`\`";
-                    message.channel.send(`There are some teams here :D`);
-                    for (var i = 0; i < rows.length; i++) {
-                        if (i % 10 == 0 && i != 0) {
-                            reply += `\`\`\`
+                if (!rows) return message.reply("There are no teams Yet!!!");
+                if (rows.length == 0) return message.channel.send("There are no teams yet!!!!")
+                var reply = "\`\`\`";
+                message.channel.send(`There are some teams here :D`);
+                for (var i = 0; i < rows.length; i++) {
+                    if (i % 10 == 0 && i != 0) {
+                        reply += `\`\`\`
                             \`\`\``
-                        }
-                        if (i % 5 == 0) {
-                            var winnerText = "Not Played Yet"
-                            if (rows[i].isWinner == "true") {
-                                winnerText = "Won";
-                            } else if (rows[i].isWinner == "false") {
-                                winnerText = "Lost"
-                            }
-                            reply += `\n\n***** ${rows[i].teamName} - ${winnerText} *****\n`
-                        }
-                        var name = rows[i].nickname;
-                        if (!name)
-                            name = rows[i].playerName
-                        reply += (`player name: ${name}, rank: ${rows[i].rank}\n`);
-
                     }
-                    reply += "\`\`\`"
-                    message.channel.send(reply);
+                    if (i % 5 == 0) {
+                        var winnerText = "Not Played Yet"
+                        if (rows[i].isWinner == "true") {
+                            winnerText = "Won";
+                        } else if (rows[i].isWinner == "false") {
+                            winnerText = "Lost"
+                        }
+                        reply += `\n\n***** ${rows[i].teamName} - ${winnerText} *****\n`
+                    }
+                    var name = rows[i].nickname;
+                    if (!name)
+                        name = rows[i].playerName
+                    reply += (`player name: ${name}, rank: ${rows[i].rank}\n`);
 
-                });
+                }
+                reply += "\`\`\`"
+                message.channel.send(reply);
+
+            });
         })
     }
     static displayNewTeam(message, team1, team2, num1, num2) {
