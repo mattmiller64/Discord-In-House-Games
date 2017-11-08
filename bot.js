@@ -37,6 +37,8 @@ bot.on("message", (message) => {
     } else if (message.content.toLowerCase().startsWith(prefix + 'help')) {
         message.channel.send(help);
         //message.channel.send(commands2);
+    } else if (message.content.toLowerCase().startsWith(prefix + 'modcommands')) {
+        message.channel.send(modCommands);
     }
     //LadderService
     else if (message.content.toLowerCase().startsWith(prefix + 'adduser')) { //adds a user to the db
@@ -52,7 +54,7 @@ bot.on("message", (message) => {
     } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
         LadderService.topForty(message);
     }
-   
+
     //CurrentInhouseService 
     // can only be called by a mod or me <3
     else if (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905') {
@@ -112,8 +114,7 @@ bot.on("message", (message) => {
             CurrentInhouseService.signUp(message);
         } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
             CurrentInhouseService.laddersignups(message);
-        }
-        else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
+        } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
             CurrentInhouseService.showTeams(message);
         } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses
             CurrentInhouseService.removeFromInhouse(message);
@@ -125,49 +126,18 @@ bot.on("message", (message) => {
 
 bot.login(config.token);
 
-const commands = `\`\`\`all commands start with ${prefix}
-help command will show a user the steps to take to participate in the inhouse games!
+const modCommands = `\`\`\`all commands start with ${prefix}
 
-***Ladder Commands***
+Mod specific commands - mods can still participate dont worry :)
 
-**addUser**
-command to add you to our databases so that you can participate.
+**addtoteam @arg1 arg2
+command to manually add a user to team, arg1 is the user @mentioned, arg2 is the name of the team to add them to.
 
-**availableRanks**
-command to show what ranks you can be on your account(silver gold etc).
-
-**updateRank arg**
-command to update your rank. Use this by typing 'updateRank silver' or whatever rank you are
-
-**stats**
-command to see your current info and points in our system.
-
-***MOD COMMAND INCOMING***
+**removefromteam @arg1**
+command to manually remove a user from a team, arg1 is the user @mentioned, this shouldremove the user from their most recent team (needs a bit of testing still.)
 
 **updatePoints arg1 arg2**
 command to manually update a users role. arg1 is a username, arg2 is the amount to adjust the points by. For instance 'updatePoints rpl-inhouse-bot 5' will update my points by 5.
-
-**ladder**
-command will display the current top forty players in our system
-\`\`\`
-
-
-`;
-const commands2 = `\`\`\`
-***InHouse Commands***
-
-Normal Users can only use 2 commands(MODS - you can use these too :))
-
-signUp
-command is used to sign up for the inhouses today, this is only available when the inhouses are open
-
-showTeams
-command is used to show the current teams and their opponents.
-
-removeme
-command removes you from sign ups (if you have been assigned to a team and need to leave please contact a mod)
-
-***MORE MOD Commands***
 
 **openInhouse**
 command to Start the sign ups so taht users can sign up for the inhouse games
@@ -188,7 +158,46 @@ command will mark a team as the winner and mark their opponent as the loser, NOT
 command will show you the number of people who are currently signed up without a team and those needed to make a new set of teams.
 
 **whosesignedup**
-command will show you everyone who has signed up so far. \`\`\``;
+command will show you everyone who has signed up so far. 
+
+\`\`\``;
+
+const commands = `\`\`\`all commands start with ${prefix}
+help command will show a user the steps to take to participate in the inhouse games!
+
+***Ladder Commands***
+
+**addUser**
+command to add you to our databases so that you can participate.
+
+**availableRanks**
+command to show what ranks you can be on your account(silver gold etc).
+
+**updateRank arg**
+command to update your rank. Use this by typing 'updateRank silver' or whatever rank you are
+
+**stats**
+command to see your current info and points in our system.
+
+**ladder**
+command will display the current top forty players in our system
+\`\`\`
+
+
+`;
+const commands2 = `\`\`\`
+***InHouse Commands***
+
+signUp
+command is used to sign up for the inhouses today, this is only available when the inhouses are open
+
+showTeams
+command is used to show the current teams and their opponents.
+
+removeme
+command removes you from sign ups (if you have been assigned to a team and need to leave please contact a mod)
+
+\`\`\``;
 
 
 var help = `Preface: all commands shown will be prefixed with ${prefix}  ie this function is help, called by ${prefix}help
