@@ -31,6 +31,18 @@ module.exports = class CurrentInHouseService {
     }
     //allows a user to sign up, must already be in the ladder db
     static signUp(message) {
+        //ping riot api to get users rank
+
+        // var summonerName = "TAC O TRINEKI"
+        // var xhttp = new XMLHttpRequest();
+        // xhttp.open("POST", "https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/"+summonerName+"?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7", true);
+        // xhttp.setRequestHeader("Content-type", "application/json");
+        // xhttp.send();
+        // var response = JSON.parse(xhttp.responseText);
+        // console.log(response);
+        // var summonerId = response.id;
+
+
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
             //CHECK TO SEE IF THEY ALREADY SIGNED UP
