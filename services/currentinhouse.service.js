@@ -312,37 +312,38 @@ module.exports = class CurrentInHouseService {
         var user = message.mentions.members.first();
         var parts = message.content.split(" ");
         var teamName = "";
-        if (parts.length < 3) {
-            teamName = parts[2];
+        if (parts.length > 3) {
             message.reply("please make sure the command is in the format 'addtoteam @user team'")
             return false;
-        }
-        else if (!user) {
+        } else if (!user) {
             message.reply("you must mention a user to use this command");
             return false;
         } else {
+            teamName = parts[2];
             //user.id to match this and remove him from team
             user = user.user;
-            console.log("user found : ", user.username);
             sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
                 var ihid = r.InhouseId;
                 //find roster id
-                sql.get(`SELECT * From InHouseRoster where InhouseId = '${ihid} AND playerId = '${user.id}' `).then(pRoster => {
-                    //find team id - check to make sure less than 5 are on team currently
-                    sql.get(`SELECT * FROM Team where InhouseId = '${ihid}' AND 
+                sql.get(`SELECT * From InHouseRoster where InhouseId = '${ihid}' AND playerId = '${user.id}' `).then(pRoster => {
+                    //find team id - check to make sure less than 5 are on team currently BREAKS HERE!
+                    sql.get(`SELECT * FROM Team where InhouseId = "${ihid}" AND 
                     TeamName = "${teamName}" AND 
-                    (Select Count(*) as count from RosterTeamBridge rtb left join Team t ON rtb.TeamId = t.TeamId WHERE rtb.InhouseId = "${ihid}"
-                     AND t.TeamName = "${TeamName}") < 5`).then((result) => {
-                         if(!result || result.count >= 5)
-                         {
-                             message.reply("Make sure that the team is in the database and has less than 5 members");
-                         }
-                         else{
-                             //insert the player
-                             sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [pRoster.RosterId, result.TeamId, ihid]).then(didwork=>{
+                    (Select Count(*) as count from RosterTeamBridge
+					rtb left join Team t ON rtb.TeamId = t.TeamId WHERE
+					rtb.InhouseId = "${ihid}"
+                     AND t.TeamName = "${teamName}") < 5`).then((result) => {
+                        console.log('here2', result);
+                        if (!result || result.count >= 5) {
+                            message.reply("Make sure that the team is in the database and has less than 5 members");
+                        } else {
+                            //insert the player
+                            sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [pRoster.RosterId, result.TeamId, ihid]).then(didwork => {
                                 message.reply("User successfully added.")
-                             }).catch(()=>{message.reply('error adding user to team')})
-                         }
+                            }).catch(() => {
+                                message.reply('error adding user to team')
+                            })
+                        }
                     }).catch(() => {
                         message.reply(`There is no team by that name`)
                     })
@@ -354,7 +355,6 @@ module.exports = class CurrentInHouseService {
                 message.reply(`You must have an inhouse open first.`)
             })
         }
-        console.log(user);
 
     }
 
@@ -368,15 +368,16 @@ module.exports = class CurrentInHouseService {
         } else {
             // user.id to match this and add him to team
             user = user.user;
-            console.log("user found : ", user.username);
             sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
                 var ihid = r.InhouseId;
                 sql.run(`DELETE FROM RosterTeamBridge where InhouseId = "${ihid}" AND RosterId = (Select RosterId from 
-                InHouseRoster where playerId = "${user.id}" AND InhouseId = '${ihid}')  ORDER BY RosterId DESC LIMIT 1`).then((rows) => {
-                    console.log(rows);
-                    message.channel.send(`user successfully removed ${user.username}`);
+                InHouseRoster where playerId = "${user.id}" AND InhouseId = '${ihid}'  ORDER BY RosterId DESC LIMIT 1)`).then((rows) => {
+                    if (rows.changes < 1)
+                        message.reply('no users found playing by that name')
+                    else
+                        message.channel.send(`user successfully removed ${user.username}`);
                 }).catch(() => {
-                    message.reply(`no team found in the current inhouse by that name: ${teamName}`)
+                    message.reply(`no player found in the database playing a game by that name`)
                 })
             }).catch(() => {
                 message.reply(`You must have an inhouse open first.`)
