@@ -23,8 +23,6 @@ bot.on('ready', function (evt) {
 
 const prefix = config.prefix; //gets prefix from config file, will look cleaner to just use prefix
 
-//if 169468313577979905 allow
-
 bot.on("message", (message) => {
     //Our bot needs to know if it will execute a command
     if (message.author.bot) return; // Ignore bots.    
@@ -188,8 +186,8 @@ command will display the current top forty players in our system
 const commands2 = `\`\`\`
 ***InHouse Commands***
 
-signUp
-command is used to sign up for the inhouses today, this is only available when the inhouses are open
+signUp arg1
+command is used to sign up for the inhouses today, this is only available when the inhouses are open, arg1 is your summoner name ie ${prefix}signup TAC O TRINEKI
 
 showTeams
 command is used to show the current teams and their opponents.

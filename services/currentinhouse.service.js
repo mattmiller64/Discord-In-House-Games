@@ -35,9 +35,17 @@ module.exports = class CurrentInHouseService {
     static signUp(message) {
         //ping riot api to get users rank
 
+        var parts = message.content.split(" ");
 
         //update rank
-        var summonerName = "TAC O TRINEKI"
+        var summonerName = ""
+        for (var i = 1; i < parts.length; i++) {
+            summonerName += parts[i];
+        }
+        if (parts.length == 1) {
+            message.reply('must be in format signup <summoner name>');
+            return false;
+        }
         var summonerId = 0;
         var rank = 'unranked';
 
@@ -49,13 +57,18 @@ module.exports = class CurrentInHouseService {
                         for (var i = 0; i < r.body.length; i++) {
                             if (r.body[i].queueType == 'RANKED_SOLO_5x5') {
                                 rank = r.body[i].tier;
-                                message.reply(`You have a rank of ${rank} via Riot's API. Good Luck!`)
                                 break;
                             }
                         }
                         LadderService.riotUpdateRank(message, rank);
-                    }).catch(err => {console.log(err);message.reply(`error fetching rank from riot api`)});
-            }).catch(err => {console.log(err);message.reply(`error fetching rank from riot api`)});
+                    }).catch(err => {
+                        console.log(err);
+                        message.reply(`error fetching rank from riot api`)
+                    });
+            }).catch(err => {
+                console.log(err);
+                message.reply(`error fetching rank from riot api`)
+            });
 
         //signup for inhouse
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
@@ -66,12 +79,13 @@ module.exports = class CurrentInHouseService {
                     message.reply(`You must use the addUser command and setRank commands before you sign up so that we can properly balance teams.`)
                     return false;
                 }
-                sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}"`).then((row2) => {
+                sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}" AND RosterId not in (SELECT RosterId from RosterTeamBridge rtb 
+                left join Team t on rtb.TeamId = t.TeamId 
+                Where rtb.InhouseId = '${row.InhouseId}' AND t.isWinner != 'not played')`).then((row2) => {
                         if (row2) {
                             message.reply("You have already signed up for todays InHouses");
                             return false;
                         }
-                        // TODO: NEED TO CHECK TO MAKE SURE THEY ARE IN THE LADDER? - should we add the ladder id to the roster rather than the player info? - who knows, but im doing it my way
                         if (!row2) {
                             //if not found, go ahead and add them               
                             sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname) VALUES (?, ?, ?, ?, ?,?)", [null, row.InhouseId, message.author.username,
@@ -131,13 +145,15 @@ module.exports = class CurrentInHouseService {
     }
     static laddersignups(message) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
-            sql.all(`Select ihr.*, l.* from InHouseRoster ihr 
-            LEFT JOIN ladder l
-                ON ihr.playerId = l.userId 
-        WHERE ihr.InhouseId = "${ihd.InhouseId}" AND l.rank is not null
+            sql.all(`Select ihr.* from InHouseRoster ihr 
+            LEFT JOIN RosterTeamBridge rtb
+                on ihr.RosterId = rtb.RosterId
+            Left Join Team t
+                on rtb.TeamId = t.TeamId
+        WHERE ihr.InhouseId = "${ihd.InhouseId}" AND t.TeamId is null
         `).then((rows) => {
                 if (!rows || rows.length == 0) {
-                    message.reply("No one has signed up yet :( /tableflip")
+                    message.reply("No one has signed up yet :( (╯°□°）╯︵ ┻━┻")
                 } else {
                     var reply = `\`\`\`**Current Players Signed Up**\n`
                     for (var i = 0; i < rows.length; i++) {
@@ -161,7 +177,6 @@ module.exports = class CurrentInHouseService {
                     return true;
                 }
                 var leftover = row.count - (row.count % 10);
-                //TODO: Change this to select all from teams that have not played either, maybe make a remake teams that will remake all and this will just remake any not on?
                 sql.all(`SELECT ihr.*, l.*
             FROM InHouseRoster ihr
                 LEFT JOIN ladder l
