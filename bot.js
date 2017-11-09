@@ -173,7 +173,7 @@ command to add you to our databases so that you can participate.
 **availableRanks**
 command to show what ranks you can be on your account(silver gold etc).
 
-**updateRank arg**
+**updateRank arg** -- deprecated (will now update rank on signup command)
 command to update your rank. Use this by typing 'updateRank silver' or whatever rank you are
 
 **stats**

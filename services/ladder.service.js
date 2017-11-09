@@ -24,9 +24,9 @@ module.exports = class LadderService {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
                 if (!row) {
                     sql.run("INSERT INTO ladder (userId, username, rank, points,LastPointsUpdateDate) VALUES (?, ?, ?, ?,?)", [message.author.id, message.author.username, ranks.unranked, 0, new Date().toJSON().slice(0, 10).toString()])
-                    .then(() => {
-                        message.reply("You were successfully added, dont forget to add your rank by using the updateRank <rank> command, type availableRanks command for help.")
-                    });
+                        .then(() => {
+                            message.reply("You were successfully added, dont forget to add your rank by using the updateRank <rank> command, type availableRanks command for help.")
+                        });
                 } else {
                     if (row.rank == ranks.unranked) {
                         message.reply(`You have already been added! But be sure to update your rank from unranked :D`);
@@ -87,28 +87,39 @@ module.exports = class LadderService {
             message.reply("Please run the addUser command first to be added to the system.");
         });
     }
-    //expected .updateRank silver
-    static updateRank(message) {
+    static riotUpdateRank(message, rank) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
-                if (!row) {
-                    message.reply("Please run the addUser command first to be added to the system.");
-                } else {
-                    var parts = message.content.split(' ');
-                    if (parts.length > 2) {
-                        message.reply(`invalid command - must be in format : ${config.prefix}updateRank rank`)
-                    } else if (this.isValidRank(parts[1])) {
-                        sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = "${message.author.id}"`);
-                        message.reply(`Rank successfully updated to ${parts[1]}`);
-                    } else {
-                        message.reply(`Your rank entered of : ${parts[1]} is not a valid rank. use the command ${config.prefix}availableRanks for more help.`);
-                    }
-                }
-            })
-            .catch(() => {
-                console.error;
-                message.reply("Error running sql command, please make sure you entered the correct command.");
-            });
+            if (!row) {
+                message.reply("Please run the addUser command first to be added to the system.");
+            }
+            else if (this.isValidRank(rank)) {
+                sql.run(`UPDATE ladder SET rank = "${rank.toLowerCase()}" WHERE userId = "${message.author.id}"`);
+                message.reply(`Rank successfully updated to ${rank.toLowerCase()}`);
+            }
+        });
     }
+    // //expected .updateRank silver
+    // static updateRank(message) {
+    //     sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
+    //             if (!row) {
+    //                 message.reply("Please run the addUser command first to be added to the system.");
+    //             } else {
+    //                 var parts = message.content.split(' ');
+    //                 if (parts.length > 2) {
+    //                     message.reply(`invalid command - must be in format : ${config.prefix}updateRank rank`)
+    //                 } else if (this.isValidRank(parts[1])) {
+    //                     sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = "${message.author.id}"`);
+    //                     message.reply(`Rank successfully updated to ${parts[1]}`);
+    //                 } else {
+    //                     message.reply(`Your rank entered of : ${parts[1]} is not a valid rank. use the command ${config.prefix}availableRanks for more help.`);
+    //                 }
+    //             }
+    //         })
+    //         .catch(() => {
+    //             console.error;
+    //             message.reply("Error running sql command, please make sure you entered the correct command.");
+    //         });
+    // }
     //expected .topForty
     static topForty(message) {
         sql.all(`SELECT * FROM ladder ORDER BY points DESC LIMIT 40`).then(rows => {

@@ -1,6 +1,8 @@
 const sql = require("sqlite");
 sql.open("./db/inhouseDB.sqlite");
 var LadderService = require('./ladder.service');
+const snekfetch = require('snekfetch');
+
 //keeps track of teams for a certain day
 
 module.exports = class CurrentInHouseService {
@@ -33,16 +35,29 @@ module.exports = class CurrentInHouseService {
     static signUp(message) {
         //ping riot api to get users rank
 
-        // var summonerName = "TAC O TRINEKI"
-        // var xhttp = new XMLHttpRequest();
-        // xhttp.open("POST", "https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/"+summonerName+"?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7", true);
-        // xhttp.setRequestHeader("Content-type", "application/json");
-        // xhttp.send();
-        // var response = JSON.parse(xhttp.responseText);
-        // console.log(response);
-        // var summonerId = response.id;
 
+        //update rank
+        var summonerName = "TAC O TRINEKI"
+        var summonerId = 0;
+        var rank = 'unranked';
 
+        snekfetch.get('https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summonerName + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
+            .then(r => {
+                summonerId = r.body.id
+                snekfetch.get('https://na1.api.riotgames.com/lol/league/v3/positions/by-summoner/' + summonerId + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
+                    .then(r => {
+                        for (var i = 0; i < r.body.length; i++) {
+                            if (r.body[i].queueType == 'RANKED_SOLO_5x5') {
+                                rank = r.body[i].tier;
+                                message.reply(`You have a rank of ${rank} via Riot's API. Good Luck!`)
+                                break;
+                            }
+                        }
+                        LadderService.riotUpdateRank(message, rank);
+                    }).catch(err => {console.log(err);message.reply(`error fetching rank from riot api`)});
+            }).catch(err => {console.log(err);message.reply(`error fetching rank from riot api`)});
+
+        //signup for inhouse
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
             //CHECK TO SEE IF THEY ALREADY SIGNED UP
