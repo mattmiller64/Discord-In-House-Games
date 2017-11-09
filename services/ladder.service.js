@@ -92,7 +92,7 @@ module.exports = class LadderService {
             if (!row) {
                 message.reply("Please run the addUser command first to be added to the system.");
             }
-            else if (this.isValidRank(rank)) {
+            else if (this.isValidRank(rank) && rank.toLowerCase() != row.rank) {
                 sql.run(`UPDATE ladder SET rank = "${rank.toLowerCase()}" WHERE userId = "${message.author.id}"`);
                 message.reply(`Rank successfully updated to ${rank.toLowerCase()}`);
             }

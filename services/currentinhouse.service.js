@@ -242,7 +242,6 @@ module.exports = class CurrentInHouseService {
             }
         }
         for (var taco = 0; taco < (teamsNeeded); taco += 2) { //adds team to database by 2's
-            console.log(taco);
             this.addTeamDb(teamsArray[taco], teamsArray[taco + 1], inhouseId, message, taco + 1, taco + 2);
         }
         // var team1points = 0;
@@ -302,25 +301,31 @@ module.exports = class CurrentInHouseService {
         console.log("add team db")
         var teamId = null;
         //Create team 1
-        sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
-            //insert the 5 players into this team using row.lastID as teamID
-            teamId = row.lastID;
-            for (var i = 0; i < 5; i++) {
-                sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
-            }
-        }).then(() => {
-            //create team 2
-            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played"]).then((row) => {
+        // get top team #'s and add to num1 and num2
+        sql.get('SELECT TeamId from Team Order By Desc').then(result => {
+            num1 += result.TeamId;
+            num2 += result.TeamId;
+            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
                 //insert the 5 players into this team using row.lastID as teamID
-                sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
+                teamId = row.lastID;
                 for (var i = 0; i < 5; i++) {
-                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
+                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
                 }
-            })
-        }).then(() => {
+            }).then(() => {
+                //create team 2
+                sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played"]).then((row) => {
+                    //insert the 5 players into this team using row.lastID as teamID
+                    sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
+                    for (var i = 0; i < 5; i++) {
+                        sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
+                    }
+                })
+            }).then(() => {
 
-            this.displayNewTeam(message, team1, team2, num1, num2)
-        });
+                this.displayNewTeam(message, team1, team2, num1, num2)
+            });
+        })
+
 
     }
 
