@@ -105,7 +105,7 @@ module.exports = class LadderService {
             message.reply("you must mention a user to use this command");
             return false;
         } else {
-            user = user.user;            
+            user = user.user;
             sql.get(`SELECT * FROM ladder WHERE userId ="${user.id}"`).then(row => {
                     if (!row) {
                         message.reply("Please run the addUser command first to be added to the system.");

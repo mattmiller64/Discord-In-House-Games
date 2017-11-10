@@ -34,9 +34,7 @@ module.exports = class CurrentInHouseService {
     //allows a user to sign up, must already be in the ladder db
     static signUp(message) {
         //ping riot api to get users rank
-
         var parts = message.content.split(" ");
-
         //update rank
         var summonerName = ""
         for (var i = 1; i < parts.length; i++) {
@@ -48,7 +46,6 @@ module.exports = class CurrentInHouseService {
         }
         var summonerId = 0;
         var rank = 'unranked';
-
         snekfetch.get('https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summonerName + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
             .then(r => {
                 summonerId = r.body.id
@@ -69,7 +66,6 @@ module.exports = class CurrentInHouseService {
                 console.log(err);
                 message.reply(`error fetching rank from riot api`)
             });
-
         //signup for inhouse
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
@@ -110,9 +106,7 @@ module.exports = class CurrentInHouseService {
                         });
                     });
             })
-
         })
-
     }
     //check to see if they are on a team that has played, if not, they can be removed
     static removeFromInhouse(message) {
@@ -153,7 +147,7 @@ module.exports = class CurrentInHouseService {
         WHERE ihr.InhouseId = "${ihd.InhouseId}" AND t.TeamId is null
         `).then((rows) => {
                 if (!rows || rows.length == 0) {
-                    message.reply("No one has signed up yet :( (╯°□°）╯︵ ┻━┻")
+                    message.reply("No one has signed up yet (╯°□°）╯︵ ┻━┻")
                 } else {
                     var reply = `\`\`\`**Current Players Signed Up**\n`
                     for (var i = 0; i < rows.length; i++) {
@@ -222,7 +216,6 @@ module.exports = class CurrentInHouseService {
                 return 0;
         });
         var teamsNeeded = result.length / 5; //since 5 people per team
-
         if (teamsNeeded == 2) {
             var team1points = 0;
             var team1members = 0;
@@ -272,10 +265,8 @@ module.exports = class CurrentInHouseService {
                     team2.push(result[count]);
                 }
             }
-
             //Create Team X and Y in the db - do we need them to have a vs column ? probs not tbh these should be made together - odd always plays the + 1 even ie team 13 palys team 14 team 1 plays team 2
             this.addTeamDb(team1, team2, inhouseId, message);
-
         } else {
             for (var count = 0; count < result.length; count++) {
                 //this loop will iterate through each team
@@ -300,7 +291,6 @@ module.exports = class CurrentInHouseService {
             }
         }
     }
-
     static addTeamDb(team1, team2, inhouseId, message, num1, num2) {
         console.log("add team db")
         var teamId = null;
@@ -329,10 +319,7 @@ module.exports = class CurrentInHouseService {
                 this.displayNewTeam(message, team1, team2, num1, num2)
             });
         })
-
-
     }
-
     static rankNumValue(rank) { // idealy we would just have a table called ranks with the rank name and point value and join the tables together but meh, later
         //if we cant figure it out, they are worth 3
         var points = 3;
@@ -352,7 +339,6 @@ module.exports = class CurrentInHouseService {
             points = 1;
         return points;
     }
-
     //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database
     static reOpenSignUps(message) {
         message.channel.send("Sign Ups are reopenned, use the signUp command to signup!!!");
@@ -405,13 +391,10 @@ module.exports = class CurrentInHouseService {
                 message.reply(`You must have an inhouse open first.`)
             })
         }
-
     }
-
     //expect removefromteam @user
     static manuallyRemoveUserFromTeam(message) {
         var user = message.mentions.members.first();
-
         if (!user) {
             message.reply("you must mention a user to use this command");
             return false;
@@ -434,7 +417,31 @@ module.exports = class CurrentInHouseService {
             })
         }
     }
-
+    //expect removefromteam @user
+    static manuallyRemoveUserFromSignUps(message) {
+        var user = message.mentions.members.first();
+        if (!user) {
+            message.reply("you must mention a user to use this command");
+            return false;
+        } else {
+            // user.id to match this and add him to team
+            user = user.user;
+            sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+                var ihid = r.InhouseId;
+                sql.run(`DELETE FROM InHouseRoster where InhouseId = "${ihid}" AND playerId = '${user.id}' 
+                AND RosterId not in (Select RosterId from RosterTeamBridge where InhouseId = "${ihid}")`).then((rows) => {
+                    if (rows.changes < 1)
+                        message.reply('no users found playing by that name')
+                    else
+                        message.channel.send(`user successfully removed ${user.username}`);
+                }).catch(() => {
+                    message.reply(`no player found in the database currently signed up`)
+                })
+            }).catch(() => {
+                message.reply(`You must have an inhouse open first.`)
+            })
+        }
+    }
     // adds points to the winners and detracts from the losers expects .winner team1
     //TODO - need to add a check to winner to make sure they have 5
     static winner(message) {
@@ -476,16 +483,6 @@ module.exports = class CurrentInHouseService {
             });
         })
     }
-    /* //creates a premade team of 5 somehow
-     static makeWholeTeam(message) {
-         return true;
-         sql.get(`SELECT * FROM CurrentInHouse WHERE userId ="${message.author.id}"`).then(row => {
-             if (!row) return message.reply("sadly you do not have any points yet!");
-             message.reply(`you currently have ${row.points} points, good going!`);
-         });
-     }
-    */
-
     //shows the list of current teams that are created - played and unplayed matches.
     static showTeams(message) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {

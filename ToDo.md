@@ -3,12 +3,12 @@
 - resetting points - there is currently no implementation for resetting points as I am not sure how they want it to be implemented, right now you can run a sql script to set all points to 0 if you wanted
 
 # TODO for BETA
-- TEST : if you create teams twice in one inhouse make it increment
-- better admin removing and adding to teams and to signups (maybe a -clean [username] or something like that - use @username)
 - Get bot on Raspberry PI
+- need to test creating teams as ive changed the balancing
 
 
 #TODO Later
+- add a way to add riot account id tied to the user, user provides name and it fetches id, then they signup once and it checks based on that id, if they mess up the name they have to contact a mod
 - better error handling
 - allow people to use like addPoints @user
 - NEED TO STORE WHETHER INHOUSE IS OPEN IN THE DB, not in the bots state - also should probably have server id instances for each table and added to each sql command

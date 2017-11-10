@@ -36,7 +36,8 @@ bot.on("message", (message) => {
         message.channel.send(help);
         //message.channel.send(commands2);
     } else if (message.content.toLowerCase().startsWith(prefix + 'modcommands')) {
-        message.channel.send(modCommands);
+        message.channel.send(modCommands1);
+        message.channel.send(modCommands2);
     }
     //LadderService
     else if (message.content.toLowerCase().startsWith(prefix + 'adduser')) { //adds a user to the db
@@ -103,6 +104,8 @@ bot.on("message", (message) => {
                 CurrentInhouseService.manuallyAddUserToTeam(message);
             } else if (message.content.toLowerCase().startsWith(prefix + 'removefromteam')) {
                 CurrentInhouseService.manuallyRemoveUserFromTeam(message);
+            } else if (message.content.toLowerCase().startsWith(prefix + 'removefromsignups')) {
+                CurrentInhouseService.manuallyRemoveUserFromSignUps(message);
             }
         }
     }
@@ -124,18 +127,9 @@ bot.on("message", (message) => {
 
 bot.login(config.token);
 
-const modCommands = `\`\`\`all commands start with ${prefix}
+const modCommands1 = `\`\`\`all commands start with ${prefix}
 
 Mod specific commands - mods can still participate dont worry :)
-
-**addtoteam @arg1 arg2
-command to manually add a user to team, arg1 is the user @mentioned, arg2 is the name of the team to add them to.
-
-**removefromteam @arg1**
-command to manually remove a user from a team, arg1 is the user @mentioned, this shouldremove the user from their most recent team (needs a bit of testing still.)
-
-**updatePoints arg1 arg2**
-command to manually update a users role. arg1 is a username, arg2 is the amount to adjust the points by. For instance 'updatePoints rpl-inhouse-bot 5' will update my points by 5.
 
 **openInhouse**
 command to Start the sign ups so taht users can sign up for the inhouse games
@@ -157,11 +151,28 @@ command will show you the number of people who are currently signed up without a
 
 **whosesignedup**
 command will show you everyone who has signed up so far. 
+\`\`\``;
+
+const modCommands2 = `\`\`\`
+
+Manual adjustment commands - used for outlier cases (if these are used everytime we need to change something)
+
+**addtoteam @arg1 arg2**
+command to manually add a user to team, arg1 is the user @mentioned, arg2 is the name of the team to add them to.
+
+**removefromteam @arg1**
+command to manually remove a user from a team, arg1 is the user @mentioned, this shouldremove the user from their most recent team (needs a bit of testing still.)
+
+**removefromsignups @arg1**
+command to manually remove a user from the signups, arg1 is the user @mentioned, this shouldremove the user assuming they are not part of a team already (in this case use removefromteam and then removefromsignups)
+
+**updatePoints arg1 arg2**
+command to manually update a users role. arg1 is a username, arg2 is the amount to adjust the points by. For instance 'updatePoints rpl-inhouse-bot 5' will update my points by 5.
 
 **updaterank @arg1 arg2**
 command will update the specified users rank, @arg1 is a mentioned user @user, arg2 is the rank, ex. updaterank @Trineki silver
-
-\`\`\``;
+\`\`\`
+`
 
 const commands = `\`\`\`all commands start with ${prefix}
 help command will show a user the steps to take to participate in the inhouse games!
@@ -205,15 +216,14 @@ var help = `Preface: all commands shown will be prefixed with ${prefix}  ie this
 Welcome to the Inhouse Games!
 
 1. If you have not already, please use the addUser command followed by the updateRank command to add yourself to the database and fill in your rank this will look like this
-\`\`\`${prefix}addUser
-${prefix}updateRank silver\`\`\`
+\`\`\`${prefix}addUser\`\`\`
 2. Once you have been added to our system, wait until someone starts the inhouse games.
-3. Once they have been started use the signUp command to sign up for the games and wait until you have been assigned a team.
+3. Once they have been started use the signUp <username> command to sign up for the games and wait until you have been assigned a team.
 4. Team assigning will be automatic, but if you forgot what team you are on, use the showTeams command to see all current teams.
 5. Then get together with your team and come up with a combat plan! (decide your lanes).
 6. Contact someone from the other team to set up the match.
 7. Dont forget to get a tournament code by an in-house admin
-8. Once the match is over, let one of the inhouse admins know who won so they can record it. (Mod remembet this is - winner TeamName)
+8. Once the match is over, let one of the inhouse admins know who won so they can record it. (Mod remember this is - winner TeamName)
 9. This will update the winners points by +5 and the loser will lose 2 points.
 10. You can check your current info using the stats command
 `
