@@ -223,78 +223,82 @@ module.exports = class CurrentInHouseService {
         });
         var teamsNeeded = result.length / 5; //since 5 people per team
 
-        for (var count = 0; count < result.length; count++) {
-            //this loop will iterate through each team
-            playerAverage += CurrentInHouseService.rankNumValue(result[count]);
-        }
-        playerAverage /= result.length;
-        teamAverage = playerAverage * 5;
-        var teamsArray = new Array(teamsNeeded);
-        var totalRuns = 0; // iterator to go over all the players
-        //FOR NOW - we will just drop higher elo until over ie put a diamond on each team until out of diamonds, then continue down the line (this is not terribly balanced, but it works)
-        for (var runs = 0; runs < 5; runs++) { //need to add 5 players to a team
-            for (var count = 0; count < teamsNeeded; count++) { //goes through the list sequentially and adds the next player of highest elo (this isnt balanced)
-                if (!teamsArray[count]) {
-                    teamsArray[count] = [];
+        if (teamsNeeded == 2) {
+            var team1points = 0;
+            var team1members = 0;
+            var team2members = 0;
+            var team2points = 0;
+            var team2 = [];
+            var team1 = [];
+            //divy out highest elo players trying to keep teams even
+            for (var count = 0; count < 10; count++) {
+                var p = CurrentInHouseService.rankNumValue(result[count].rank);
+                //team 2 needs members
+                if (team1points > team2points && team2members != 5) {
+                    team2members++;
+                    team2points += p;
+                    team2.push(result[count]);
                 }
-                teamsArray[count].push(result[totalRuns]);
-                totalRuns++;
+                //team 1 needs members
+                else if (team2points > team1points && team1members != 5) {
+                    team1members++;
+                    team1points += p;
+                    team1.push(result[count]);
+                }
+                //these last 2 functions are just catch alls, since we dont have a greater or equal, this basically implies the 2 points are the same
+                //team 1 needs the member
+                else if (team1members > team2members && team1members != 5) //if team1 has the same points but more members, means the need the next highest elo person
+                {
+                    team1members++;
+                    team1points += p;
+                    team1.push(result[count]);
+                }
+                //same as above but reversed
+                else if (team2members > team1members && team2members != 5) {
+                    team2members++;
+                    team2points += p;
+                    team2.push(result[count]);
+                }
+                //else we just add a member to team 1
+                else if (team1members != 5) {
+                    team1members++;
+                    team1points += p;
+                    team1.push(result[count]);
+                }
+                //else add member to team 2
+                else if (team2members != 5) {
+                    team2members++;
+                    team2points += p;
+                    team2.push(result[count]);
+                }
+            }
+
+            //Create Team X and Y in the db - do we need them to have a vs column ? probs not tbh these should be made together - odd always plays the + 1 even ie team 13 palys team 14 team 1 plays team 2
+            this.addTeamDb(team1, team2, inhouseId, message);
+
+        } else {
+            for (var count = 0; count < result.length; count++) {
+                //this loop will iterate through each team
+                playerAverage += CurrentInHouseService.rankNumValue(result[count]);
+            }
+            playerAverage /= result.length;
+            teamAverage = playerAverage * 5;
+            var teamsArray = new Array(teamsNeeded);
+            var totalRuns = 0; // iterator to go over all the players
+            //FOR NOW - we will just drop higher elo until over ie put a diamond on each team until out of diamonds, then continue down the line (this is not terribly balanced, but it works)
+            for (var runs = 0; runs < 5; runs++) { //need to add 5 players to a team
+                for (var count = 0; count < teamsNeeded; count++) { //goes through the list sequentially and adds the next player of highest elo (this isnt balanced)
+                    if (!teamsArray[count]) {
+                        teamsArray[count] = [];
+                    }
+                    teamsArray[count].push(result[totalRuns]);
+                    totalRuns++;
+                }
+            }
+            for (var taco = 0; taco < (teamsNeeded); taco += 2) { //adds team to database by 2's
+                this.addTeamDb(teamsArray[taco], teamsArray[taco + 1], inhouseId, message, taco + 1, taco + 2);
             }
         }
-        for (var taco = 0; taco < (teamsNeeded); taco += 2) { //adds team to database by 2's
-            this.addTeamDb(teamsArray[taco], teamsArray[taco + 1], inhouseId, message, taco + 1, taco + 2);
-        }
-        // var team1points = 0;
-        // var team1members = 0;
-        // var team2members = 0;
-        // var team2points = 0;
-        // var team2 = [];
-        // var team1 = [];
-        // //divy out highest elo players trying to keep teams even
-        // for (var count = 0; count < 10; count++) {
-        //     var p = CurrentInHouseService.rankNumValue(result[count].rank);
-        //     //team 2 needs members
-        //     if (team1points > team2points && team2members != 5) {
-        //         team2members++;
-        //         team2points += p;
-        //         team2.push(result[count]);
-        //     }
-        //     //team 1 needs members
-        //     else if (team2points > team1points && team1members != 5) {
-        //         team1members++;
-        //         team1points += p;
-        //         team1.push(result[count]);
-        //     }
-        //     //these last 2 functions are just catch alls, since we dont have a greater or equal, this basically implies the 2 points are the same
-        //     //team 1 needs the member
-        //     else if (team1members > team2members && team1members != 5) //if team1 has the same points but more members, means the need the next highest elo person
-        //     {
-        //         team1members++;
-        //         team1points += p;
-        //         team1.push(result[count]);
-        //     }
-        //     //same as above but reversed
-        //     else if (team2members > team1members && team2members != 5) {
-        //         team2members++;
-        //         team2points += p;
-        //         team2.push(result[count]);
-        //     }
-        //     //else we just add a member to team 1
-        //     else if (team1members != 5) {
-        //         team1members++;
-        //         team1points += p;
-        //         team1.push(result[count]);
-        //     }
-        //     //else add member to team 2
-        //     else if (team2members != 5) {
-        //         team2members++;
-        //         team2points += p;
-        //         team2.push(result[count]);
-        //     }
-        // }
-
-        //Create Team X and Y in the db - do we need them to have a vs column? probs not tbh these should be made together - odd always plays the +1 even ie team 13 palys team 14 team 1 plays team 2
-        // this.addTeamDb(team1, team2, inhouseId, message);
     }
 
     static addTeamDb(team1, team2, inhouseId, message, num1, num2) {
@@ -302,7 +306,7 @@ module.exports = class CurrentInHouseService {
         var teamId = null;
         //Create team 1
         // get top team #'s and add to num1 and num2
-        sql.get('SELECT TeamId from Team Order By Desc').then(result => {
+        sql.get("SELECT TeamId from Team Order By TeamId Desc Limit 1").then(result => {
             num1 += result.TeamId;
             num2 += result.TeamId;
             sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
@@ -380,7 +384,6 @@ module.exports = class CurrentInHouseService {
 					rtb left join Team t ON rtb.TeamId = t.TeamId WHERE
 					rtb.InhouseId = "${ihid}"
                      AND t.TeamName = "${teamName}") < 5`).then((result) => {
-                        console.log('here2', result);
                         if (!result || result.count >= 5) {
                             message.reply("Make sure that the team is in the database and has less than 5 members");
                         } else {
@@ -430,8 +433,6 @@ module.exports = class CurrentInHouseService {
                 message.reply(`You must have an inhouse open first.`)
             })
         }
-        console.log(user);
-
     }
 
     // adds points to the winners and detracts from the losers expects .winner team1

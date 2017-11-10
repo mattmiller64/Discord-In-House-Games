@@ -47,9 +47,7 @@ bot.on("message", (message) => {
         LadderService.getUserInfo(message);
     } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905')) { //updates users points - can only be called by mod to manually adjust a users points
         LadderService.updatePoints(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
-        LadderService.updateRank(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
+    }else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
         LadderService.topForty(message);
     }
 
