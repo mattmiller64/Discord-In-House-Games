@@ -47,7 +47,7 @@ bot.on("message", (message) => {
         LadderService.getUserInfo(message);
     } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905')) { //updates users points - can only be called by mod to manually adjust a users points
         LadderService.updatePoints(message);
-    }else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
+    } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
         LadderService.topForty(message);
     }
 
@@ -62,6 +62,8 @@ bot.on("message", (message) => {
                 CurrentInhouseService.startSignUps(message);
                 message.channel.send(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
             }
+        } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
+            LadderService.updateRank(message);
         }
         // can only be called by a mod
         // potential bug, if you close inhouses, then you decide to start a new one - itll just be obnoxious, dont do that, i dont think it needs to make a bug,
@@ -155,6 +157,9 @@ command will show you the number of people who are currently signed up without a
 
 **whosesignedup**
 command will show you everyone who has signed up so far. 
+
+**updaterank @arg1 arg2**
+command will update the specified users rank, @arg1 is a mentioned user @user, arg2 is the rank, ex. updaterank @Trineki silver
 
 \`\`\``;
 

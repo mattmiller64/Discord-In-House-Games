@@ -91,35 +91,42 @@ module.exports = class LadderService {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
             if (!row) {
                 message.reply("Please run the addUser command first to be added to the system.");
-            }
-            else if (this.isValidRank(rank) && rank.toLowerCase() != row.rank) {
+            } else if (this.isValidRank(rank) && rank.toLowerCase() != row.rank) {
                 sql.run(`UPDATE ladder SET rank = "${rank.toLowerCase()}" WHERE userId = "${message.author.id}"`);
                 message.reply(`Rank successfully updated to ${rank.toLowerCase()}`);
             }
         });
     }
-    // //expected .updateRank silver
-    // static updateRank(message) {
-    //     sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}"`).then(row => {
-    //             if (!row) {
-    //                 message.reply("Please run the addUser command first to be added to the system.");
-    //             } else {
-    //                 var parts = message.content.split(' ');
-    //                 if (parts.length > 2) {
-    //                     message.reply(`invalid command - must be in format : ${config.prefix}updateRank rank`)
-    //                 } else if (this.isValidRank(parts[1])) {
-    //                     sql.run(`UPDATE ladder SET rank = "${parts[1].toLowerCase()}" WHERE userId = "${message.author.id}"`);
-    //                     message.reply(`Rank successfully updated to ${parts[1]}`);
-    //                 } else {
-    //                     message.reply(`Your rank entered of : ${parts[1]} is not a valid rank. use the command ${config.prefix}availableRanks for more help.`);
-    //                 }
-    //             }
-    //         })
-    //         .catch(() => {
-    //             console.error;
-    //             message.reply("Error running sql command, please make sure you entered the correct command.");
-    //         });
-    // }
+    //expected .updateRank @user silver
+    static updateRank(message) {
+        var user = message.mentions.members.first();
+
+        if (!user) {
+            message.reply("you must mention a user to use this command");
+            return false;
+        } else {
+            user = user.user;            
+            sql.get(`SELECT * FROM ladder WHERE userId ="${user.id}"`).then(row => {
+                    if (!row) {
+                        message.reply("Please run the addUser command first to be added to the system.");
+                    } else {
+                        var parts = message.content.split(' ');
+                        if (parts.length != 3) {
+                            message.reply(`invalid command - must be in format : ${config.prefix}updateRank @user rank`)
+                        } else if (this.isValidRank(parts[2])) {
+                            sql.run(`UPDATE ladder SET rank = "${parts[2].toLowerCase()}" WHERE userId = "${user.id}"`);
+                            message.reply(`Rank successfully updated to ${parts[2]}`);
+                        } else {
+                            message.reply(`Your rank entered of : ${parts[2]} is not a valid rank. use the command ${config.prefix}availableRanks for more help.`);
+                        }
+                    }
+                })
+                .catch(() => {
+                    console.error;
+                    message.reply("Error running sql command, please make sure you entered the correct command.");
+                });
+        }
+    }
     //expected .topForty
     static topForty(message) {
         sql.all(`SELECT * FROM ladder ORDER BY points DESC LIMIT 40`).then(rows => {
