@@ -11,10 +11,10 @@ module.exports = class CurrentInHouseService {
     // groups all sign ups in groups of ten and makes team even
     // starts the sign ups for the current in-houses
     static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+        sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
                 //row gets the most recent game to increment the name from
-                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
-                    new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, serverId) VALUES (?, ?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
+                    new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, message.guild.id
                 ]).then(result => {
                     message.channel.send(
                         `Inhouse #${result.lastID} is open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
@@ -22,9 +22,9 @@ module.exports = class CurrentInHouseService {
             })
             .catch(() => {
                 console.error;
-                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT)").then(() => {
-                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, "InHouse1",
-                            new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
+                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT, serverId TEXT)").then(() => {
+                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, serverId TEXT) VALUES (?, ?, ?, ?, ?, ?)", [null, "InHouse1",
+                            new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, message.guild.id
                         ]);
                     })
                     .catch(() => {
@@ -68,15 +68,15 @@ module.exports = class CurrentInHouseService {
                 message.reply(`error fetching user from riot api`)
             });
         //signup for inhouse
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+        sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
             //CHECK TO SEE IF THEY ALREADY SIGNED UP
-            sql.get(`SELECT * FROM ladder where userId = "${message.author.id}"`).then((isContained) => {
+            sql.get(`SELECT * FROM ladder where userId = "${message.author.id}" and serverId = "${message.guild.id}"`).then((isContained) => {
                 if (!isContained) {
                     message.reply(`You must use the addUser command and setRank commands before you sign up so that we can properly balance teams.`)
                     return false;
                 }
-                sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}" AND RosterId not in (SELECT RosterId from RosterTeamBridge rtb 
+                sql.get(`SELECT * FROM InHouseRoster Where playerId = "${message.author.id}" AND InhouseId = "${row.InhouseId}" and serverId = "${message.guild.id}" AND RosterId not in (SELECT RosterId from RosterTeamBridge rtb 
                 left join Team t on rtb.TeamId = t.TeamId 
                 Where rtb.InhouseId = '${row.InhouseId}' AND t.isWinner != 'not played')`).then((row2) => {
                         if (row2) {
@@ -85,8 +85,8 @@ module.exports = class CurrentInHouseService {
                         }
                         if (!row2) {
                             //if not found, go ahead and add them               
-                            sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname) VALUES (?, ?, ?, ?, ?,?)", [null, row.InhouseId, message.author.username,
-                                message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname
+                            sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, row.InhouseId, message.author.username,
+                                message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname, message.guild.id
                             ]).then(() => {
                                 message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
                                 return true;
@@ -96,12 +96,12 @@ module.exports = class CurrentInHouseService {
                     .catch(() => {
                         console.log('inhouseroster db does not exist, creating db then inserting user')
                         console.error;
-                        sql.run("CREATE TABLE IF NOT EXISTS InHouseRoster (RosterId INTEGER PRIMARY KEY, InhouseId INTEGER, playerName TEXT, playerId TEXT, date TEXT, nickname TEXT)").then(() => {
-                            sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName,playerId, date, nickname) VALUES (?, ?, ?, ?, ?,?)", [null, row.InhouseId, message.author.username,
-                                message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname
+                        sql.run("CREATE TABLE IF NOT EXISTS InHouseRoster (RosterId INTEGER PRIMARY KEY, InhouseId INTEGER, playerName TEXT, playerId TEXT, date TEXT, nickname TEXT, serverId TEXT)").then(() => {
+                            sql.run("INSERT INTO InHouseRoster (RosterId, InhouseId, playerName, playerId, date, nickname, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, row.InhouseId, message.author.username,
+                                message.author.id, new Date().toJSON().slice(0, 10).toString(), message.member.nickname, message.guild.id
                             ])
-                            sql.run("CREATE TABLE IF NOT EXISTS RosterTeamBridge (RosterId INTEGER, TeamId INTEGER, InhouseId INTEGER)");
-                            sql.run("CREATE TABLE IF NOT EXISTS Team (TeamId INTEGER PRIMARY KEY, teamName TEXT,InhouseId INTEGER, VsId INTEGER, isWinner TEXT)");
+                            sql.run("CREATE TABLE IF NOT EXISTS RosterTeamBridge (RosterId INTEGER, TeamId INTEGER, InhouseId INTEGER, serverId TEXT)");
+                            sql.run("CREATE TABLE IF NOT EXISTS Team (TeamId INTEGER PRIMARY KEY, teamName TEXT,InhouseId INTEGER, VsId INTEGER, isWinner TEXT, serverId TEXT)");
                             message.reply('You have been successfully added to the inhhouse games! May the odds be ever in your favor.');
                             return true;
                         });
@@ -111,8 +111,8 @@ module.exports = class CurrentInHouseService {
     }
     //check to see if they are on a team that has played, if not, they can be removed
     static removeFromInhouse(message) {
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
-            sql.run(`DELETE from InHouseRoster where InhouseId = "${ihd.InhouseId}" AND playerId = "${message.author.id}" AND RosterId not in (SELECT RosterId from RosterTeamBridge where inhouseId = "${ihd.InhouseId}")`).then((result) => {
+        sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
+            sql.run(`DELETE from InHouseRoster where InhouseId = "${ihd.InhouseId}" AND playerId = "${message.author.id}" and serverId = "${message.guild.id}" AND RosterId not in (SELECT RosterId from RosterTeamBridge where inhouseId = "${ihd.InhouseId}")`).then((result) => {
                 if (result.changes > 0) {
                     message.reply("You have been removed from the inhouses")
                 } else {
@@ -122,11 +122,11 @@ module.exports = class CurrentInHouseService {
         })
     }
     static leftover(message) {
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
+        sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
             sql.all(`Select ihr.* from InHouseRoster ihr 
         Left join RosterTeamBridge rtb
             ON ihr.RosterId = rtb.RosterId AND ihr.InhouseId = rtb.InhouseId
-        Where rtb.RosterId is null AND ihr.InhouseId = "${ihd.InhouseId}"
+        Where rtb.RosterId is null AND ihr.InhouseId = "${ihd.InhouseId}" and ihr.serverId = "${message.guild.id}"
         `).then((rows) => {
                 if (!rows) {
                     message.reply("Everyone is currently signed up with a team :) (or no people have signed up)")
@@ -138,6 +138,8 @@ module.exports = class CurrentInHouseService {
             })
         })
     }
+////TODO STOPPED HERE!!!!!!!!!!!!!!!!!!!!!!!
+
     static laddersignups(message) {
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
             sql.all(`Select ihr.* from InHouseRoster ihr 
