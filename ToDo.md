@@ -14,3 +14,8 @@
 - make MMR and prettify results
 
 - adding a whole group of five - need to implement 
+
+
+#TODO NOW
+1. finish implementing guild/server uniqueness
+2. add true and false to inhouse table
