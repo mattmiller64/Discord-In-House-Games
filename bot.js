@@ -62,7 +62,6 @@ bot.on("message", (message) => {
             } else {
                 inHouseOpen = true;
                 CurrentInhouseService.startSignUps(message);
-                message.channel.send(`Inhouses are now open! type ${prefix}signUp to sign up!!!`)
             }
         } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
             LadderService.updateRank(message);

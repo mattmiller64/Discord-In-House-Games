@@ -3,8 +3,6 @@ sql.open("./db/inhouseDB.sqlite");
 var LadderService = require('./ladder.service');
 const snekfetch = require('snekfetch');
 
-//keeps track of teams for a certain day
-
 module.exports = class CurrentInHouseService {
     //mod starts the inhouse games 
     //user signs up, if not added to ladder database throws error.
@@ -17,7 +15,10 @@ module.exports = class CurrentInHouseService {
                 //row gets the most recent game to increment the name from
                 sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username) VALUES (?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
                     new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
-                ])
+                ]).then(result => {
+                    message.channel.send(
+                        `Inhouse #${result.lastID} are open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
+                })
             })
             .catch(() => {
                 console.error;
@@ -64,7 +65,7 @@ module.exports = class CurrentInHouseService {
                     });
             }).catch(err => {
                 console.log(err);
-                message.reply(`error fetching rank from riot api`)
+                message.reply(`error fetching user from riot api`)
             });
         //signup for inhouse
         sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {

@@ -25,13 +25,10 @@ module.exports = class LadderService {
                 if (!row) {
                     sql.run("INSERT INTO ladder (userId, username, rank, points,LastPointsUpdateDate) VALUES (?, ?, ?, ?,?)", [message.author.id, message.author.username, ranks.unranked, 0, new Date().toJSON().slice(0, 10).toString()])
                         .then(() => {
-                            message.reply("You were successfully added, dont forget to add your rank by using the updateRank <rank> command, type availableRanks command for help.")
+                            message.reply("You were successfully added, when you sign up, your rank will be stored!")
                         });
                 } else {
-                    if (row.rank == ranks.unranked) {
-                        message.reply(`You have already been added! But be sure to update your rank from unranked :D`);
-                    } else
-                        message.reply(`You have already been added!`);
+                    message.reply(`You have already been added!`);
                 }
             })
             .catch(() => {
