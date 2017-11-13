@@ -17,7 +17,7 @@ module.exports = class CurrentInHouseService {
                     new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username
                 ]).then(result => {
                     message.channel.send(
-                        `Inhouse #${result.lastID} are open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
+                        `Inhouse #${result.lastID} is open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
                 })
             })
             .catch(() => {
