@@ -24,6 +24,7 @@ bot.on('ready', function (evt) {
 const prefix = config.prefix; //gets prefix from config file, will look cleaner to just use prefix
 
 bot.on("message", (message) => {
+    //console.log(message.guild.id);
     //Our bot needs to know if it will execute a command
     if (message.author.bot) return; // Ignore bots.    
     if (message.channel.type === "dm") return; // Ignore DM channels.    
