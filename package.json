@@ -1,7 +1,7 @@
 {
-  "name": "inhouse-games",
-  "version": "1.0.0",
-  "description": "Test bot for RPL",
+  "name": "tournament-bot",
+  "version": "1.8.0",
+  "description": "Bot for inhouse Tournaments",
   "main": "bot.js",
   "author": "Trineki",
   "dependencies": {
