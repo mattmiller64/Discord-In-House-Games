@@ -4,7 +4,6 @@
 
 # TODO for BETA
 - Get bot on Raspberry PI
-- need to test creating teams as ive changed the balancing
 
 
 #TODO Later

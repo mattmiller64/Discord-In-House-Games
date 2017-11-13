@@ -266,7 +266,20 @@ module.exports = class CurrentInHouseService {
                 }
             }
             //Create Team X and Y in the db - do we need them to have a vs column ? probs not tbh these should be made together - odd always plays the + 1 even ie team 13 palys team 14 team 1 plays team 2
-            this.addTeamDb(team1, team2, inhouseId, message);
+            message.channel.send('Balancing teams and eating tacos, please be patient :)')
+            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} Order By TeamId Desc Limit 1 `).then(result => {
+                var startingNum = 0;
+                if (!result)
+                    startingNum = 1;
+                else
+                    startingNum = parseInt(result.TeamId);
+                console.log('here');
+                console.log(startingNum);
+                CurrentInHouseService.addTeamDb(team1, team2, inhouseId, message,parseInt(startingNum), parseInt(startingNum) + 1);
+            }).catch(err => {
+                console.log('error before addteamdb call - 2 teams');
+                message.channel.send('error before addteamdb, Apologies for the inconvenience :(')
+            });
         } else {
             for (var count = 0; count < result.length; count++) {
                 //this loop will iterate through each team
@@ -286,9 +299,20 @@ module.exports = class CurrentInHouseService {
                     totalRuns++;
                 }
             }
-            for (var taco = 0; taco < (teamsNeeded); taco += 2) { //adds team to database by 2's
-                this.addTeamDb(teamsArray[taco], teamsArray[taco + 1], inhouseId, message, taco + 1, taco + 2);
-            }
+            message.channel.send('Balancing teams and eating tacos, please be patient :)')
+            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} Order By TeamId Desc Limit 1 `).then(result => {
+                var startingNum = 0;
+                if (!result)
+                    startingNum = 1;
+                else
+                    startingNum = result.TeamId;
+                for (var taco = 0; taco < (teamsNeeded); taco += 2) { //adds team to database by 2's
+                    CurrentInHouseService.addTeamDb(teamsArray[taco], teamsArray[taco + 1], inhouseId, message, taco + parseInt(startingNum), taco + parseInt(startingNum) + 1);
+                }
+            }).catch(err => {
+                console.log('error before addteamdb call');
+                message.channel.send('error before addteamdb, Apologies for the inconvenience :(')
+            });
         }
     }
     static addTeamDb(team1, team2, inhouseId, message, num1, num2) {
@@ -296,29 +320,27 @@ module.exports = class CurrentInHouseService {
         var teamId = null;
         //Create team 1
         // get top team #'s and add to num1 and num2
-        sql.get("SELECT TeamId from Team Order By TeamId Desc Limit 1").then(result => {
-            num1 += result.TeamId;
-            num2 += result.TeamId;
-            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
+        sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
+            //insert the 5 players into this team using row.lastID as teamID
+            teamId = row.lastID;
+            if (!teamId)
+                teamId = 1;
+            for (var i = 0; i < 5; i++) {
+                sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
+            }
+        }).then(() => {
+            //create team 2
+            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played"]).then((row) => {
                 //insert the 5 players into this team using row.lastID as teamID
-                teamId = row.lastID;
+                sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
                 for (var i = 0; i < 5; i++) {
-                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
+                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
                 }
-            }).then(() => {
-                //create team 2
-                sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played"]).then((row) => {
-                    //insert the 5 players into this team using row.lastID as teamID
-                    sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
-                    for (var i = 0; i < 5; i++) {
-                        sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
-                    }
-                })
-            }).then(() => {
+            })
+        }).then(() => {
 
-                this.displayNewTeam(message, team1, team2, num1, num2)
-            });
-        })
+            this.displayNewTeam(message, team1, team2, num1, num2)
+        });
     }
     static rankNumValue(rank) { // idealy we would just have a table called ranks with the rank name and point value and join the tables together but meh, later
         //if we cant figure it out, they are worth 3
@@ -472,6 +494,7 @@ module.exports = class CurrentInHouseService {
                     for (var i = 0; i < rows1.length; i++)
                         LadderService.addPoints(message, rows1[i].playerId, -2);
                 }).then(taco => { //Promise still not waiting correctly
+                    message.channel.send('adding points to the winners :)')
                     setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
                         sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
                         sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
@@ -495,7 +518,7 @@ module.exports = class CurrentInHouseService {
             Left JOIN Ladder l
                 ON ihr.playerId = l.userId
             where ihr.RosterId in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${row.InhouseId}"
-        ORDER BY t.TeamId asc`).then(rows => {
+        ORDER BY t.teamName asc`).then(rows => {
                 if (!rows) return message.reply("There are no teams Yet!!!");
                 if (rows.length == 0) return message.channel.send("There are no teams yet!!!!")
                 var reply = "\`\`\`";
