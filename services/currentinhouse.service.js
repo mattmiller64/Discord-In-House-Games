@@ -138,16 +138,15 @@ module.exports = class CurrentInHouseService {
             })
         })
     }
-////TODO STOPPED HERE!!!!!!!!!!!!!!!!!!!!!!!
 
     static laddersignups(message) {
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
+        sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
             sql.all(`Select ihr.* from InHouseRoster ihr 
             LEFT JOIN RosterTeamBridge rtb
                 on ihr.RosterId = rtb.RosterId
             Left Join Team t
                 on rtb.TeamId = t.TeamId
-        WHERE ihr.InhouseId = "${ihd.InhouseId}" AND t.TeamId is null
+        WHERE ihr.InhouseId = "${ihd.InhouseId}" AND t.TeamId is null AND ihr.serverId = "${message.guild.id}"
         `).then((rows) => {
                 if (!rows || rows.length == 0) {
                     message.reply("No one has signed up yet (╯°□°）╯︵ ┻━┻")
@@ -167,8 +166,8 @@ module.exports = class CurrentInHouseService {
     }
     static createTeams(message) { // if there is not enough to make teams, make sure we drop the newest added. (order by id cause date sorting sucks)
         //get people ordered by rosterId joined with ladder table to get ranks
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
-            sql.get(`SELECT COUNT(*) as count from InHouseRoster where InhouseId = "${ihd.InhouseId}" AND RosterId not in (Select RosterId from RosterTeamBridge)`).then((row) => { //dont get people already on a team
+        sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(ihd => {
+            sql.get(`SELECT COUNT(*) as count from InHouseRoster where serverId = "${message.guild.id}" AND InhouseId = "${ihd.InhouseId}" AND RosterId not in (Select RosterId from RosterTeamBridge)`).then((row) => { //dont get people already on a team
                 if (!row || row.count < 10) {
                     message.reply("no one/ not enough people have signed up yet that are not already on teams! Use the leftover command to see how many are missing or show teams to see those currently on a team.")
                     return true;
@@ -178,7 +177,7 @@ module.exports = class CurrentInHouseService {
             FROM InHouseRoster ihr
                 LEFT JOIN ladder l
                     ON ihr.playerId = l.userId
-            where ihr.RosterId not in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${ihd.InhouseId}"
+            where ihr.RosterId not in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${ihd.InhouseId}" AND ihr.serverId = "${message.guild.id}"
             ORDER BY ihr.RosterId LIMIT ${leftover}`).then((result) => {
                     //this function should separate the teams based on rank - simple averaging formula used - could eventually upgrade it but meh
                     //potential bug - if 20 people sign up too fast to keep up with - this isnt async, so it should be ok? handle this later
@@ -270,7 +269,7 @@ module.exports = class CurrentInHouseService {
             }
             //Create Team X and Y in the db - do we need them to have a vs column ? probs not tbh these should be made together - odd always plays the + 1 even ie team 13 palys team 14 team 1 plays team 2
             message.channel.send('Balancing teams and eating tacos, please be patient :)')
-            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} Order By TeamId Desc Limit 1 `).then(result => {
+            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} AND serverId = "${message.guild.id}" Order By TeamId Desc Limit 1 `).then(result => {
                 var startingNum = 0;
                 if (!result)
                     startingNum = 1;
@@ -303,7 +302,7 @@ module.exports = class CurrentInHouseService {
                 }
             }
             message.channel.send('Balancing teams and eating tacos, please be patient :)')
-            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} Order By TeamId Desc Limit 1 `).then(result => {
+            sql.get(`SELECT TeamId from Team WHERE InhouseId = ${inhouseId} AND serverId = "${message.guild.id}" Order By TeamId Desc Limit 1 `).then(result => {
                 var startingNum = 0;
                 if (!result)
                     startingNum = 1;
@@ -323,21 +322,21 @@ module.exports = class CurrentInHouseService {
         var teamId = null;
         //Create team 1
         // get top team #'s and add to num1 and num2
-        sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played"]).then((row) => {
+        sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner, serverId) VALUES (?, ?, ?, ?, ?, ?)", [null, `Team${num1}`, inhouseId, null, "not played", message.guild.id]).then((row) => {
             //insert the 5 players into this team using row.lastID as teamID
             teamId = row.lastID;
             if (!teamId)
                 teamId = 1;
             for (var i = 0; i < 5; i++) {
-                sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId])
+                sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId, InhouseId, serverId) VALUES (?, ?, ?, ?)", [team1[i].RosterId, row.lastID, inhouseId, message.guild.id])
             }
         }).then(() => {
             //create team 2
-            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner) VALUES (?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played"]).then((row) => {
+            sql.run("INSERT INTO Team (TeamId, teamName, InhouseId, VsId, isWinner, serverId) VALUES (?, ?, ?, ?, ?, ?)", [null, `Team${num2}`, inhouseId, teamId, "not played", message.guild.id]).then((row) => {
                 //insert the 5 players into this team using row.lastID as teamID
                 sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
                 for (var i = 0; i < 5; i++) {
-                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId]);
+                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId, serverId) VALUES (?, ?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId,message.guild.id]);
                 }
             })
         }).then(() => {
@@ -384,13 +383,13 @@ module.exports = class CurrentInHouseService {
             teamName = parts[2];
             //user.id to match this and remove him from team
             user = user.user;
-            sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+            sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(r => {
                 var ihid = r.InhouseId;
                 //find roster id
-                sql.get(`SELECT * From InHouseRoster where InhouseId = '${ihid}' AND playerId = '${user.id}' `).then(pRoster => {
+                sql.get(`SELECT * From InHouseRoster where InhouseId = '${ihid}' AND playerId = '${user.id}' AND serverId = "${message.guild.id}" `).then(pRoster => {
                     //find team id - check to make sure less than 5 are on team currently BREAKS HERE!
                     sql.get(`SELECT * FROM Team where InhouseId = "${ihid}" AND 
-                    TeamName = "${teamName}" AND 
+                    TeamName = "${teamName}" AND serverId = "${message.guild.id}" AND
                     (Select Count(*) as count from RosterTeamBridge
 					rtb left join Team t ON rtb.TeamId = t.TeamId WHERE
 					rtb.InhouseId = "${ihid}"
@@ -399,7 +398,7 @@ module.exports = class CurrentInHouseService {
                             message.reply("Make sure that the team is in the database and has less than 5 members");
                         } else {
                             //insert the player
-                            sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId) VALUES (?, ?, ?)", [pRoster.RosterId, result.TeamId, ihid]).then(didwork => {
+                            sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId, InhouseId, serverId) VALUES (?, ?, ?, ?)", [pRoster.RosterId, result.TeamId, ihid, message.guild.id]).then(didwork => {
                                 message.reply("User successfully added.")
                             }).catch(() => {
                                 message.reply('error adding user to team')
@@ -426,9 +425,9 @@ module.exports = class CurrentInHouseService {
         } else {
             // user.id to match this and add him to team
             user = user.user;
-            sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+            sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(r => {
                 var ihid = r.InhouseId;
-                sql.run(`DELETE FROM RosterTeamBridge where InhouseId = "${ihid}" AND RosterId = (Select RosterId from 
+                sql.run(`DELETE FROM RosterTeamBridge where InhouseId = "${ihid}" AND serverId = "${message.guild.id}" AND RosterId = (Select RosterId from 
                 InHouseRoster where playerId = "${user.id}" AND InhouseId = '${ihid}'  ORDER BY RosterId DESC LIMIT 1)`).then((rows) => {
                     if (rows.changes < 1)
                         message.reply('no users found playing by that name')
@@ -451,9 +450,9 @@ module.exports = class CurrentInHouseService {
         } else {
             // user.id to match this and add him to team
             user = user.user;
-            sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+            sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(r => {
                 var ihid = r.InhouseId;
-                sql.run(`DELETE FROM InHouseRoster where InhouseId = "${ihid}" AND playerId = '${user.id}' 
+                sql.run(`DELETE FROM InHouseRoster where InhouseId = "${ihid}" AND playerId = '${user.id}' AND serverId = "${message.guild.id}"
                 AND RosterId not in (Select RosterId from RosterTeamBridge where InhouseId = "${ihid}")`).then((rows) => {
                     if (rows.changes < 1)
                         message.reply('no users found playing by that name')
@@ -472,8 +471,8 @@ module.exports = class CurrentInHouseService {
     static winner(message) {
         var parts = message.content.split(" ");
         var teamName = parts[1];
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(r => {
-            sql.get(`SELECT * FROM Team WHERE teamName ="${teamName}" AND InhouseId="${r.InhouseId}"`).then(row => {
+        sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(r => {
+            sql.get(`SELECT * FROM Team WHERE teamName ="${teamName}" AND serverId = "${message.guild.id}" AND InhouseId="${r.InhouseId}"`).then(row => {
                 if (!row) return message.reply("There is no team by that team name in the latest inhouse");
                 if (row.isWinner == "true" || row.isWinner == "false") {
                     message.reply("These teams have already played.")
@@ -484,7 +483,7 @@ module.exports = class CurrentInHouseService {
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
-                where rtb.TeamId = "${row.TeamId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows => {
+                where rtb.TeamId = "${row.TeamId}" AND rtb.serverId = "${message.guild.id}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows => {
                     for (var i = 0; i < rows.length; i++)
                         LadderService.addPoints(message, rows[i].playerId, 5);
                 })
@@ -493,14 +492,14 @@ module.exports = class CurrentInHouseService {
                 FROM RosterTeamBridge rtb 
                     LEFT JOIN InHouseRoster ihr
                         ON rtb.RosterId = ihr.RosterId
-                where rtb.TeamId = "${row.VsId}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1 => {
+                where rtb.TeamId = "${row.VsId}" AND rtb.serverId = "${message.guild.id}" AND rtb.InhouseId="${r.InhouseId}"`).then(rows1 => {
                     for (var i = 0; i < rows1.length; i++)
                         LadderService.addPoints(message, rows1[i].playerId, -2);
                 }).then(taco => { //Promise still not waiting correctly
                     message.channel.send('adding points to the winners :)')
                     setTimeout(function () { //wonky way to make it wait a sec and the updates should be finished, not stable
-                        sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}"`);
-                        sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}"`);
+                        sql.run(`UPDATE Team SET isWinner = "true" where TeamId = "${row.TeamId}" AND serverId = "${message.guild.id}"`);
+                        sql.run(`UPDATE Team SET isWinner = "false" where TeamId = "${row.VsId}" AND serverId = "${message.guild.id}"`);
                         message.channel.send("Points updated");
                         LadderService.topForty(message);
                         return true;
@@ -511,7 +510,7 @@ module.exports = class CurrentInHouseService {
     }
     //shows the list of current teams that are created - played and unplayed matches.
     static showTeams(message) {
-        sql.get(`SELECT * FROM CurrentInHouse ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+        sql.get(`SELECT * FROM CurrentInHouse WHERE serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             sql.all(`SELECT ihr.*, l.*, t.*
         FROM InHouseRoster ihr
             LEFT JOIN RosterTeamBridge r
@@ -520,7 +519,7 @@ module.exports = class CurrentInHouseService {
                 ON r.TeamId = t.TeamId
             Left JOIN Ladder l
                 ON ihr.playerId = l.userId
-            where ihr.RosterId in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${row.InhouseId}"
+            where ihr.RosterId in (Select RosterId from RosterTeamBridge)  AND ihr.inhouseId = "${row.InhouseId}" AND ihr.serverId = "${message.guild.id}"
         ORDER BY t.teamName asc`).then(rows => {
                 if (!rows) return message.reply("There are no teams Yet!!!");
                 if (rows.length == 0) return message.channel.send("There are no teams yet!!!!")

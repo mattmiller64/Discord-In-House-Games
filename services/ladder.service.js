@@ -53,10 +53,10 @@ module.exports = class LadderService {
     //expected .updatePoints <username> <points>
     static updatePoints(message) {
         var parts = message.content.split(" ");
-        var username = parts[1];
+        var user = message.mentions.members.first();
         var points = parts[2];
         //find userId
-        sql.get(`SELECT * FROM ladder where username="${username}" and serverId = "${message.guild.id}"`).then(row => {
+        sql.get(`SELECT * FROM ladder where userId="${user.id}" and serverId = "${message.guild.id}"`).then(row => {
             return this.addPoints(message, row.userId, points);
         }).catch(() => {
             return false;

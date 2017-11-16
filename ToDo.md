@@ -2,8 +2,10 @@
 - decay - as of today, decaying points will not be implemented as this would need to be ran on a scheduler to be consistent in its job
 - resetting points - there is currently no implementation for resetting points as I am not sure how they want it to be implemented, right now you can run a sql script to set all points to 0 if you wanted
 
-# TODO for BETA
-- update bot on raspberry pi to beta
+#TODO NOW
+1. finish implementing guild/server uniqueness
+2. add true and false to inhouse table
+3. update bot
 
 #TODO Later
 - add a way to add riot account id tied to the user, user provides name and it fetches id, then they signup once and it checks based on that id, if they mess up the name they have to contact a mod, also doesnt need to update on each signup?
@@ -14,8 +16,3 @@
 - make MMR and prettify results
 
 - adding a whole group of five - need to implement 
-
-
-#TODO NOW
-1. finish implementing guild/server uniqueness
-2. add true and false to inhouse table
