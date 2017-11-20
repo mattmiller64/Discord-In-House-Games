@@ -13,8 +13,8 @@ module.exports = class CurrentInHouseService {
     static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
         sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
                 //row gets the most recent game to increment the name from
-                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, serverId) VALUES (?, ?, ?, ?, ?, ?)", [null, `InHouse${row.InhouseId + 1}`,
-                    new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, message.guild.id
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, isOpen, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, "InHouse1",
+                    new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, "true", message.guild.id
                 ]).then(result => {
                     message.channel.send(
                         `Inhouse #${result.lastID} is open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
@@ -22,15 +22,52 @@ module.exports = class CurrentInHouseService {
             })
             .catch(() => {
                 console.error;
-                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT, serverId TEXT)").then(() => {
-                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, serverId TEXT) VALUES (?, ?, ?, ?, ?, ?)", [null, "InHouse1",
-                            new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, message.guild.id
+                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT, isOpen TEXT, serverId TEXT)").then(() => {
+                        sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, isOpen, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, "InHouse1",
+                            new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, "true", message.guild.id
                         ]);
                     })
                     .catch(() => {
                         console.log("Creating and inserting into CurrentInHouse - error occured")
                     });
             });
+    }
+
+    static setInhouseStatus(message, status) {
+        return new Promise((resolve, reject) => {
+            sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+                if (!row) {
+                    message.channel.send(`no inhouses found for this server, please use the openinhouse command`);
+                } else {
+                    console.log('status', status);
+                    sql.run(`UPDATE CurrentInHouse SET isOpen = "${status}" WHERE InhouseId = "${row.InhouseId}" AND serverId = "${message.guild.id}"`).then(() => {
+                        resolve(true);
+                    }).catch(() => {
+                        reject(false);
+                    })
+                }
+            })
+        })
+    }
+
+    static areInHousesOpen(message) {
+        return new Promise((resolve, reject) => {
+            sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
+                console.log(row);
+                if (!row) {
+                    message.channel.send(`no inhouses found for this server, please use the openinhouse command`);
+                } else {
+                    if (row.isOpen == "true") {
+                        console.log('true returned');
+                        resolve(true);
+                    } else if (row.isOpen == "false") {
+                        resolve(false);
+                    } else {
+                        message.channel.send("could not parse result");
+                    }
+                }
+            })
+        })
     }
     //allows a user to sign up, must already be in the ladder db
     static signUp(message) {
@@ -275,9 +312,7 @@ module.exports = class CurrentInHouseService {
                     startingNum = 1;
                 else
                     startingNum = parseInt(result.TeamId);
-                console.log('here');
-                console.log(startingNum);
-                CurrentInHouseService.addTeamDb(team1, team2, inhouseId, message,parseInt(startingNum), parseInt(startingNum) + 1);
+                CurrentInHouseService.addTeamDb(team1, team2, inhouseId, message, parseInt(startingNum), parseInt(startingNum) + 1);
             }).catch(err => {
                 console.log('error before addteamdb call - 2 teams');
                 message.channel.send('error before addteamdb, Apologies for the inconvenience :(')
@@ -336,7 +371,7 @@ module.exports = class CurrentInHouseService {
                 //insert the 5 players into this team using row.lastID as teamID
                 sql.run(`Update TEAM SET VsId = "${row.lastID}" WHERE TeamId = "${teamId}"`);
                 for (var i = 0; i < 5; i++) {
-                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId, serverId) VALUES (?, ?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId,message.guild.id]);
+                    sql.run("INSERT INTO RosterTeamBridge (RosterId, TeamId,InhouseId, serverId) VALUES (?, ?, ?, ?)", [team2[i].RosterId, row.lastID, inhouseId, message.guild.id]);
                 }
             })
         }).then(() => {
