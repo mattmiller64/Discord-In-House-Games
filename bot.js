@@ -75,7 +75,7 @@ bot.on("message", (message) => {
                 // can only be called by a mod
                 // potential bug, if you close inhouses, then you decide to start a new one - itll just be obnoxious, dont do that, i dont think it needs to make a bug,
                 //it will leave anyone who signed up but didnt get assigned a team out to dry, but if they ressign up all is well.
-                else if (message.content.toLowerCase().startsWith(prefix + 'repensignups')) { // Re-opens the sign ups to allow last minute people to sign up
+                else if (message.content.toLowerCase().startsWith(prefix + 'reopensignups')) { // Re-opens the sign ups to allow last minute people to sign up
                     if (inhouseOpen) {
                         message.reply("inHouses are already open");
                     } else {

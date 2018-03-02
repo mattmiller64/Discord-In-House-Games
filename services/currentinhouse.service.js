@@ -13,7 +13,7 @@ module.exports = class CurrentInHouseService {
     static startSignUps(message) { //maybe creates an entry like inhouse1 and from this you can see the entire roster of inhouse 1, along with teams etc
         sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
                 //row gets the most recent game to increment the name from
-                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, isOpen, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, "InHouse1",
+                sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, isOpen, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, "InHouse "+row.InhouseId,
                     new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, "true", message.guild.id
                 ]).then(result => {
                     message.channel.send(
