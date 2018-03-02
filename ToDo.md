@@ -3,8 +3,8 @@
 - resetting points - there is currently no implementation for resetting points as I am not sure how they want it to be implemented, right now you can run a sql script to set all points to 0 if you wanted
 
 #TODO NOW
-1. finish implementing guild/server uniqueness
-2. add true and false to inhouse table - TEST THIS
+1. finish implementing guild/server uniqueness - need to update reopen/close sign ups
+2. add true and false to inhouse table - TEST THIS 
 3. update bot on raspberry pi
 
 

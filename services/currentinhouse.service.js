@@ -18,7 +18,17 @@ module.exports = class CurrentInHouseService {
                 ]).then(result => {
                     message.channel.send(
                         `Inhouse #${result.lastID} is open. Please use: signup <username> to participate\nPlease enter your username **WITH** special characters, this helps with balancing!)`)
-                })
+                }).catch(() => {
+                    console.error;
+                    sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT, isOpen TEXT, serverId TEXT)").then(() => {
+                            sql.run("INSERT INTO CurrentInHouse (InhouseId, inhouseName, date, created_by_id, created_by_username, isOpen, serverId) VALUES (?, ?, ?, ?, ?, ?, ?)", [null, "InHouse1",
+                                new Date().toJSON().slice(0, 10).toString(), message.author.id, message.author.username, "true", message.guild.id
+                            ]);
+                        })
+                        .catch(() => {
+                            console.log("Creating and inserting into CurrentInHouse - error occured")
+                        });
+                });
             })
             .catch(() => {
                 console.error;
@@ -53,12 +63,10 @@ module.exports = class CurrentInHouseService {
     static areInHousesOpen(message) {
         return new Promise((resolve, reject) => {
             sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
-                console.log(row);
                 if (!row) {
                     message.channel.send(`no inhouses found for this server, please use the openinhouse command`);
                 } else {
                     if (row.isOpen == "true") {
-                        console.log('true returned');
                         resolve(true);
                     } else if (row.isOpen == "false") {
                         resolve(false);
@@ -67,43 +75,56 @@ module.exports = class CurrentInHouseService {
                     }
                 }
             })
+            .catch(() => {
+                console.error;
+                sql.run("CREATE TABLE IF NOT EXISTS CurrentInHouse (InhouseId INTEGER PRIMARY KEY, inhouseName TEXT, date TEXT, created_by_id TEXT, created_by_username TEXT, isOpen TEXT, serverId TEXT)").then(() => {
+                    resolve(false);
+                    })
+                    .catch(() => {
+                        console.log("Creating currentinhouse table fail")
+                    });
+            });
         })
     }
     //allows a user to sign up, must already be in the ladder db
     static signUp(message) {
         //ping riot api to get users rank
         var parts = message.content.split(" ");
+        var checkAPI = true;
         //update rank
         var summonerName = ""
         for (var i = 1; i < parts.length; i++) {
             summonerName += parts[i];
         }
         if (parts.length == 1) {
-            message.reply('must be in format signup <summoner name>');
-            return false;
+            message.reply('must be in format signup <summoner name> Please ask a mod to manually update your rank.');
+            checkAPI = false;
+            //return false;
         }
         var summonerId = 0;
         var rank = 'unranked';
-        snekfetch.get('https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summonerName + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
-            .then(r => {
-                summonerId = r.body.id
-                snekfetch.get('https://na1.api.riotgames.com/lol/league/v3/positions/by-summoner/' + summonerId + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
-                    .then(r => {
-                        for (var i = 0; i < r.body.length; i++) {
-                            if (r.body[i].queueType == 'RANKED_SOLO_5x5') {
-                                rank = r.body[i].tier;
-                                break;
+        if(checkAPI) {
+            snekfetch.get('https://na1.api.riotgames.com/lol/summoner/v3/summoners/by-name/' + summonerName + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
+                .then(r => {
+                    summonerId = r.body.id
+                    snekfetch.get('https://na1.api.riotgames.com/lol/league/v3/positions/by-summoner/' + summonerId + '?api_key=RGAPI-ca99041e-f455-4571-be1c-4d6e5c8d24a7')
+                        .then(r => {
+                            for (var i = 0; i < r.body.length; i++) {
+                                if (r.body[i].queueType == 'RANKED_SOLO_5x5') {
+                                    rank = r.body[i].tier;
+                                    break;
+                                }
                             }
-                        }
-                        LadderService.riotUpdateRank(message, rank);
-                    }).catch(err => {
-                        console.log(err);
-                        message.reply(`error fetching rank from riot api`)
-                    });
-            }).catch(err => {
-                console.log(err);
-                message.reply(`error fetching user from riot api`)
-            });
+                            LadderService.riotUpdateRank(message, rank);
+                        }).catch(err => {
+                            console.log(err);
+                            message.reply(`error fetching rank from riot api`)
+                        });
+                }).catch(err => {
+                    console.log(err);
+                    message.reply(`error fetching user from riot api`)
+                });
+        }
         //signup for inhouse
         sql.get(`SELECT * FROM CurrentInHouse where serverId = "${message.guild.id}" ORDER BY InhouseId DESC LIMIT 1`).then(row => {
             //row gets the most recent game to use as the InhouseId
@@ -398,7 +419,7 @@ module.exports = class CurrentInHouseService {
             points = 1;
         return points;
     }
-    //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database
+    //Re-opens the sign ups to allow last minute people to sign up - i believe this doesnt need to do anything in the database - TODO CHANGE THIS FOR SERVER STUFF
     static reOpenSignUps(message) {
         message.channel.send("Sign Ups are reopenned, use the signUp command to signup!!!");
         return true;
