@@ -90,6 +90,9 @@ bot.on("message", (message) => {
                 else if (message.content.toLowerCase().startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
                     CurrentInhouseService.winner(message);
                 } // can only be called by a mod
+                else if (message.content.toLowerCase().startsWith(prefix + 'resetpoints')) { // adds points to the winners and detracts from the losers expects .winner team1
+                    LadderService.resetPoints(message);
+                } // can only be called by a mod
                 else if (inhouseOpen) {
                     if (message.content.toLowerCase().startsWith(prefix + 'closeinhouse')) { // ends the in-house games for the day
                         inHouseOpen = false;

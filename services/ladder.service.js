@@ -56,13 +56,26 @@ module.exports = class LadderService {
         var user = message.mentions.members.first();
         var points = parts[2];
         //find userId
-        sql.get(`SELECT * FROM ladder where userId="${user.id}" and serverId = "${message.guild.id}"`).then(row => {
+        sql.get(`SELECT * FROM ladder where userId="${user.Id}" and serverId = "${message.guild.id}"`).then(row => {
+            console.log('here')
             return this.addPoints(message, row.userId, points);
         }).catch(() => {
             return false;
         })
-
     }
+    static resetPoints(message) {
+        //find all users from server message.guild.id
+        sql.get(`SELECT * FROM ladder where serverId = "${message.guild.id}"`).then(rows => {
+            //loop through each row and set points to 0
+            for (var i = 0, len = rows.length; i < len; i++) {
+                this.zeroPoints(message, rows[i].userId)
+              }            
+              return true;
+        }).catch(() => {
+            return false;
+        })
+    }
+
     static addPoints(message, userId, points) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${userId}" and serverId = "${message.guild.id}"`).then(row => {
             if (!row) {
@@ -70,12 +83,31 @@ module.exports = class LadderService {
                 message.channel.send("A user was not found, please have an admin check the logs.")
                 return false
             } else {
+                console.log('here2')
                 var p = +row.points + +points;
 
                 if (p < 0) { //ensure points dont go negative
                     p = 0;
                 }
                 sql.run(`UPDATE ladder SET points = ${p}, LastPointsUpdateDate = "${new Date().toJSON().slice(0, 10).toString()}" WHERE userId = "${userId}" and serverId = "${message.guild.id}"`).then(row => {
+                    return true;
+                });
+            }
+        }).catch(() => {
+            console.error;
+            message.reply("Please run the addUser command first to be added to the system.");
+        });
+    }
+    
+    static zeroPoints(message, userId) {
+        sql.get(`SELECT * FROM ladder WHERE userId ="${userId}" and serverId = "${message.guild.id}"`).then(row => {
+            if (!row) {
+                console.log("User of ID : " + userId + " was not found.");
+                message.channel.send("A user was not found, please have an admin check the logs.")
+                return false
+            } else {
+                sql.run(`UPDATE ladder SET points = 0, LastPointsUpdateDate = "${new Date().toJSON().slice(0, 10).toString()}" WHERE userId = "${userId}" and serverId = "${message.guild.id}"`).then(row => {
+                    message.channel.send(`successfully reset user ${userId} to 0`);
                     return true;
                 });
             }
