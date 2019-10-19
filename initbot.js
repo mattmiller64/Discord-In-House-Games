@@ -9,5 +9,3 @@ sql.open("./db/inhouseDB.sqlite").then(()=>
     sql.run("CREATE TABLE IF NOT EXISTS RosterTeamBridge (RosterId INTEGER, TeamId INTEGER, InhouseId INTEGER, serverId TEXT)");
     sql.run("CREATE TABLE IF NOT EXISTS Team (TeamId INTEGER PRIMARY KEY, teamName TEXT,InhouseId INTEGER, VsId INTEGER, isWinner TEXT, serverId TEXT)");
 }).then(()=>{console.log("DB inited")});
-
-

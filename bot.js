@@ -30,107 +30,108 @@ bot.on("message", (message) => {
     if (message.channel.type === "dm") return; // Ignore DM channels.    
     if (message.channel.type !== "text") return;
     //Base
-    else if (message.content.toLowerCase().startsWith(prefix + 'showcommands')) {
-        message.channel.send(commands);
-        message.channel.send(commands2);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'help')) {
-        message.channel.send(help);
-        //message.channel.send(commands2);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'modcommands')) {
-        message.channel.send(modCommands1);
-        message.channel.send(modCommands2);
-    }
-    //LadderService
-    else if (message.content.toLowerCase().startsWith(prefix + 'adduser')) { //adds a user to the db
-        LadderService.addUser(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'availableranks')) { //shows user available ranks and how to update theirs
-        LadderService.availableRanks(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'stats')) { //gets users info
-        LadderService.getUserInfo(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905')) { //updates users points - can only be called by mod to manually adjust a users points
-        LadderService.updatePoints(message);
-    } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
-        LadderService.topForty(message);
-    } else {
-        let inhouseOpen;
-        // TODO NEED TO WAIT ON THIS SOMEHOW
-        CurrentInhouseService.areInHousesOpen(message).then((result) => {
-            console.log('thisisathingy', result);
-            inhouseOpen = result;
-            // gets whether the inhouse is open or not
-            //CurrentInhouseService 
-            // can only be called by a mod or me <3
-            if (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905') {
-                if (message.content.toLowerCase().startsWith(prefix + 'openinhouse')) { // opens the sign ups for the current in-houses today
-                    // TODO NEED TO WAIT ON THIS SOMEHOW
-                    if (inhouseOpen) {
-                        message.reply("inHouses are already open");
-                    } else {
-                        console.log('starting sign ups')
-                        CurrentInhouseService.startSignUps(message);
+    if(message.content.indexOf(prefix) == 0)
+    {
+        if (message.content.toLowerCase().startsWith(prefix + 'showcommands')) {
+            message.channel.send(commands);
+            message.channel.send(commands2);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'help')) {
+            message.channel.send(help);
+            //message.channel.send(commands2);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'modcommands')) {
+            message.channel.send(modCommands1);
+            message.channel.send(modCommands2);
+        }
+        //LadderService
+        else if (message.content.toLowerCase().startsWith(prefix + 'adduser')) { //adds a user to the db
+            LadderService.addUser(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'availableranks')) { //shows user available ranks and how to update theirs
+            LadderService.availableRanks(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'stats')) { //gets users info
+            LadderService.getUserInfo(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'updatepoints') && (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905')) { //updates users points - can only be called by mod to manually adjust a users points
+            LadderService.updatePoints(message);
+        } else if (message.content.toLowerCase().startsWith(prefix + 'ladder')) { //gives top 40 ladder standings
+            LadderService.topForty(message);
+        } else {
+            let inhouseOpen;
+            // TODO NEED TO WAIT ON THIS SOMEHOW
+            CurrentInhouseService.areInHousesOpen(message).then((result) => {
+                console.log('thisisathingy', result);
+                inhouseOpen = result;
+                // gets whether the inhouse is open or not
+                //CurrentInhouseService 
+                // can only be called by a mod or me <3
+                if (message.member.roles.some(r => config.roles.includes(r.name)) || message.author.id == '169468313577979905') {
+                    if (message.content.toLowerCase().startsWith(prefix + 'openinhouse')) { // opens the sign ups for the current in-houses today
+                        // TODO NEED TO WAIT ON THIS SOMEHOW
+                        if (inhouseOpen) {
+                            message.reply("inHouses are already open");
+                        } else {
+                            console.log('starting sign ups')
+                            CurrentInhouseService.startSignUps(message);
+                        }
+                    } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
+                        LadderService.updateRank(message);
                     }
-                } else if (message.content.toLowerCase().startsWith(prefix + 'updaterank')) { //updates the users rank
-                    LadderService.updateRank(message);
-                }
-                // can only be called by a mod
-                // potential bug, if you close inhouses, then you decide to start a new one - itll just be obnoxious, dont do that, i dont think it needs to make a bug,
-                //it will leave anyone who signed up but didnt get assigned a team out to dry, but if they ressign up all is well.
-                else if (message.content.toLowerCase().startsWith(prefix + 'reopeninhouse')) { // Re-opens the sign ups to allow last minute people to sign up
-                    if (inhouseOpen) {
-                        message.reply("inHouses are already open");
-                    } else {
-                        CurrentInhouseService.setInhouseStatus(message, true);
-                        message.reply("inHouses are reOpened");
+                    // can only be called by a mod
+                    else if (message.content.toLowerCase().startsWith(prefix + 'reopeninhouse')) { // Re-opens the sign ups to allow last minute people to sign up
+                        if (inhouseOpen) {
+                            message.reply("inHouses are already open");
+                        } else {
+                            CurrentInhouseService.setInhouseStatus(message, true);
+                            message.reply("inHouses are reOpened");
+                        }
+                    }
+                    // end sign ups can only be called by a mod - this and endInHouse are probably duplicates
+                    else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
+                        CurrentInhouseService.showTeams(message);
+                    } // can only be called by a mod
+                    else if (message.content.toLowerCase().startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
+                        CurrentInhouseService.winner(message);
+                    } // can only be called by a mod
+                    else if (inhouseOpen) {
+                        if (message.content.toLowerCase().startsWith(prefix + 'closeinhouse')) { // ends the in-house games for the day
+                            inHouseOpen = false;
+                            CurrentInhouseService.setInhouseStatus(message, false);
+                            CurrentInhouseService.endInhouse(message); //this doesnt do anything special either, really to end an inhouse you just create a new one with startSignUps
+                        }
+                        //mods can still sign up ;)
+                        else if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
+                            CurrentInhouseService.signUp(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'leftover')) {
+                            CurrentInhouseService.leftover(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'createteams')) { //signs a user up for this days inhouse
+                            CurrentInhouseService.createTeams(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses 
+                            CurrentInhouseService.removeFromInhouse(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
+                            CurrentInhouseService.laddersignups(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'addtoteam')) {
+                            CurrentInhouseService.manuallyAddUserToTeam(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'removefromteam')) {
+                            CurrentInhouseService.manuallyRemoveUserFromTeam(message);
+                        } else if (message.content.toLowerCase().startsWith(prefix + 'removefromsignups')) {
+                            CurrentInhouseService.manuallyRemoveUserFromSignUps(message);
+                        }
                     }
                 }
-                // end sign ups can only be called by a mod - this and endInHouse are probably duplicates
-                else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
-                    CurrentInhouseService.showTeams(message);
-                } // can only be called by a mod
-                else if (message.content.toLowerCase().startsWith(prefix + 'winner')) { // adds points to the winners and detracts from the losers expects .winner team1
-                    CurrentInhouseService.winner(message);
-                } // can only be called by a mod
+                // users can only sign up and show the current teams laddersignups
                 else if (inhouseOpen) {
-                    if (message.content.toLowerCase().startsWith(prefix + 'closeinhouse')) { // ends the in-house games for the day
-                        inHouseOpen = false;
-                        CurrentInhouseService.setInhouseStatus(message, false);
-                        CurrentInhouseService.endInhouse(message); //this doesnt do anything special either, really to end an inhouse you just create a new one with startSignUps
-                    }
-                    //mods can still sign up ;)
-                    else if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
+                    if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
                         CurrentInhouseService.signUp(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'leftover')) {
-                        CurrentInhouseService.leftover(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'createteams')) { //signs a user up for this days inhouse
-                        CurrentInhouseService.createTeams(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses 
-                        CurrentInhouseService.removeFromInhouse(message);
                     } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
                         CurrentInhouseService.laddersignups(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'addtoteam')) {
-                        CurrentInhouseService.manuallyAddUserToTeam(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'removefromteam')) {
-                        CurrentInhouseService.manuallyRemoveUserFromTeam(message);
-                    } else if (message.content.toLowerCase().startsWith(prefix + 'removefromsignups')) {
-                        CurrentInhouseService.manuallyRemoveUserFromSignUps(message);
+                    } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
+                        CurrentInhouseService.showTeams(message);
+                    } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses
+                        CurrentInhouseService.removeFromInhouse(message);
                     }
-                }
-            }
-            // users can only sign up and show the current teams laddersignups
-            else if (inhouseOpen) {
-                if (message.content.toLowerCase().startsWith(prefix + 'signup')) { //signs a user up for this days inhouse
-                    CurrentInhouseService.signUp(message);
-                } else if (message.content.toLowerCase().startsWith(prefix + 'whosesignedup')) { // displays everyone who is signed up today
-                    CurrentInhouseService.laddersignups(message);
                 } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
                     CurrentInhouseService.showTeams(message);
-                } else if (message.content.toLowerCase().startsWith(prefix + 'removeme')) { // removes user from these inhouses
-                    CurrentInhouseService.removeFromInhouse(message);
                 }
-            } else if (message.content.toLowerCase().startsWith(prefix + 'showteams')) { // shows the list of current teams full or incomplete
-                CurrentInhouseService.showTeams(message);
-            }
-        });
+            });
+        }
     }
 });
 
@@ -141,7 +142,7 @@ const modCommands1 = `\`\`\`all commands start with ${prefix}
 Mod specific commands - mods can still participate dont worry :)
 
 **openInhouse**
-command to Start the sign ups so taht users can sign up for the inhouse games
+command to Start the sign ups so that users can sign up for the inhouse games
 
 **reOpenSignUps**
 command will reopen the last inhouses just in case they were accidentally closed or you had a few last minute sign ups

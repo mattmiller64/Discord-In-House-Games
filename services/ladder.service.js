@@ -38,10 +38,12 @@ module.exports = class LadderService {
                 });
             });
     }
+
     // expected .availableRanks
     static availableRanks(message) {
         message.reply(`Type '${config.prefix}updateRank' followed by a space and your rank - Ex. ${config.prefix}updateRank ${ranks.challenger} \n\nYour available ranks are ${ranks.unranked}, ${ranks.bronze}, ${ranks.silver}, ${ranks.gold}, ${ranks.platinum}, ${ranks.diamond}, ${ranks.masters}, ${ranks.challenger}`)
     }
+
     // expected .standing
     static getUserInfo(message) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}" and serverId = "${message.guild.id}"`).then(row => {
@@ -49,20 +51,47 @@ module.exports = class LadderService {
             message.reply(`Your current points: ${row.points}, and your current rank is ${row.rank} `);
         });
     }
+
     //BUGS - duplicate usernames will mess it up
     //expected .updatePoints <username> <points>
     static updatePoints(message) {
         var parts = message.content.split(" ");
         var user = message.mentions.members.first();
         var points = parts[2];
-        //find userId
-        sql.get(`SELECT * FROM ladder where userId="${user.id}" and serverId = "${message.guild.id}"`).then(row => {
-            return this.addPoints(message, row.userId, points);
-        }).catch(() => {
+        if(!this.isInt(points))
+        {
+            console.log(`points value - ${points}`);
+            message.channel.send("Command must be in the format ~updatePoints <username> <points>~ with points being a whole number, please try again.");
             return false;
-        })
+        }
+        console.log(user.id);
+        sql.get(`SELECT * FROM ladder WHERE userId ="${user.id}" and serverId = "${message.guild.id}"`).then(row => {
+            if (!row) {
+                console.log("User of ID : " + user.id + " was not found.");
+                message.channel.send("A user was not found, please have an admin check the logs.")
+                return false
+            } else {
+                var p = +row.points + +points;
+
+                if (p < 0) { //ensure points dont go negative
+                    p = 0;
+                }
+                sql.run(`UPDATE ladder SET points = ${p}, LastPointsUpdateDate = "${new Date().toJSON().slice(0, 10).toString()}" WHERE userId = "${user.id}" and serverId = "${message.guild.id}"`).then(row => {
+                    message.channel.send(`Points Successfully added - total points for user: ${p}`);
+                    return true;
+                }).catch(() => {
+                    console.log("Something went wrong in UpdatePoints Function");
+                    message.reply("Something went wrong for adding points to this user");
+                });
+            }
+        }).catch(() => {
+            console.error;
+            message.reply("Please run the addUser command first to be added to the system.");
+        });
+
 
     }
+
     static addPoints(message, userId, points) {
         sql.get(`SELECT * FROM ladder WHERE userId ="${userId}" and serverId = "${message.guild.id}"`).then(row => {
             if (!row) {
@@ -76,6 +105,7 @@ module.exports = class LadderService {
                     p = 0;
                 }
                 sql.run(`UPDATE ladder SET points = ${p}, LastPointsUpdateDate = "${new Date().toJSON().slice(0, 10).toString()}" WHERE userId = "${userId}" and serverId = "${message.guild.id}"`).then(row => {
+                    message.channel.send(`Points Successfully added - total points for user: ${p}`);
                     return true;
                 });
             }
@@ -84,16 +114,18 @@ module.exports = class LadderService {
             message.reply("Please run the addUser command first to be added to the system.");
         });
     }
+
     static riotUpdateRank(message, rank) {
-        sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}" and serverId = "${message.guild.id}"`).then(row => {
-            if (!row) {
-                message.reply("Please run the addUser command first to be added to the system.");
-            } else if (this.isValidRank(rank) && rank.toLowerCase() != row.rank) {
-                sql.run(`UPDATE ladder SET rank = "${rank.toLowerCase()}" WHERE userId = "${message.author.id}" and serverId = "${message.guild.id}"`);
-                message.reply(`Rank successfully updated to ${rank.toLowerCase()}`);
-            }
-        });
+        // sql.get(`SELECT * FROM ladder WHERE userId ="${message.author.id}" and serverId = "${message.guild.id}"`).then(row => {
+        //     if (!row) {
+        //         message.reply("Please run the addUser command first to be added to the system.");
+        //     } else if (this.isValidRank(rank) && rank.toLowerCase() != row.rank) {
+        //         sql.run(`UPDATE ladder SET rank = "${rank.toLowerCase()}" WHERE userId = "${message.author.id}" and serverId = "${message.guild.id}"`);
+        //         message.reply(`Rank successfully updated to ${rank.toLowerCase()}`);
+        //     }
+        // });
     }
+
     //expected .updateRank @user silver
     static updateRank(message) {
         var user = message.mentions.members.first();
@@ -103,8 +135,10 @@ module.exports = class LadderService {
             return false;
         } else {
             user = user.user;
+            console.log(user);
             sql.get(`SELECT * FROM ladder WHERE userId ="${user.id}" and serverId = "${message.guild.id}"`).then(row => {
-                    if (!row) {
+                console.log(row);    
+                if (!row) {
                         message.reply("Please run the addUser command first to be added to the system.");
                     } else {
                         var parts = message.content.split(' ');
@@ -124,10 +158,11 @@ module.exports = class LadderService {
                 });
         }
     }
+
     //expected .topForty
     static topForty(message) {
-        sql.all(`SELECT * FROM ladder Where serverId = "${message.guild.id}" ORDER BY points DESC LIMIT 40`).then(rows => {
-                var result = "\n";
+        sql.all(`SELECT * FROM ladder Where serverId = "${message.guild.id}" ORDER BY points DESC`).then(rows => {
+                var result = `\`\`\`ml\n`;
                 var counter = 1;
                 if (!rows) {
                     message.reply("No Users in the System");
@@ -135,10 +170,15 @@ module.exports = class LadderService {
                     var t = 0;
                     while (t < rows.length) {
                         var element = rows[t];
-                        result += `rank: ${t+1}, player: ${element.username}, points: ${element.points}\n`;
+                        var username = element.username.toLowerCase()
+                                                        .split(' ')
+                                                        .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+                                                        .join(' ');
+                        result += `${t+1}. player: ${username}, points: ${element.points}\n`;
                         t++;
                     }
-                    message.reply(result);
+                    result += "\`\`\`";
+                    message.channel.send(result);
                 }
             })
             .catch(() => {
@@ -146,10 +186,16 @@ module.exports = class LadderService {
                 message.reply("ERROR - Please run the addUser command first to be added to the system.");
             });
     }
+
     static isValidRank(parts) {
         if (parts.toLowerCase() == ranks.bronze || parts.toLowerCase() == ranks.challenger || parts.toLowerCase() == ranks.diamond || parts.toLowerCase() == ranks.gold || parts.toLowerCase() == ranks.masters || parts.toLowerCase() == ranks.platinum || parts.toLowerCase() == ranks.silver || parts.toLowerCase() == ranks.unranked)
             return true;
         else
             return false;
     }
+
+    static isInt(value) {
+        return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value))
+      }
+
 }

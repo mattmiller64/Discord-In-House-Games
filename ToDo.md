@@ -16,3 +16,7 @@
 - write scripts to be ran nightly to dm users when they will decay, also add nightly script to implement the decay
 
 - adding a whole group of five - need to implement 
+
+
+
+NEED TO FILTER MESSAGES THAT DONT CONTAIN OUR PREFIX OR COMMAND>>>>>
